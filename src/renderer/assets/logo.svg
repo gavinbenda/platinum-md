@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="141px" height="30px" viewBox="0 0 141 30" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+    <!-- Generator: Sketch 56.2 (81672) - https://sketch.com -->
+    <title>Group</title>
+    <desc>Created with Sketch.</desc>
+    <g id="Page-1" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+        <g id="Artboard" transform="translate(-114.000000, -46.000000)">
+            <g id="Group" transform="translate(114.000000, 46.000000)">
+                <rect id="Rectangle" stroke="#FFFFFF" x="0.5" y="0.5" width="140" height="29" rx="8"></rect>
+                <path d="M104,0 L133,0 C137.418278,-8.11624501e-16 141,3.581722 141,8 L141,22 C141,26.418278 137.418278,30 133,30 L104,30 C99.581722,30 96,26.418278 96,22 L96,8 C96,3.581722 99.581722,8.11624501e-16 104,0 Z M114.86,25 L119.24,25 L119.24,4.75 L112.76,4.75 C112.01,9.49 111.23,13.87 110.84,16.9 L110.75,16.9 C110.45,14.05 109.79,8.98 109.13,4.75 L102.56,4.75 L102.56,25 L106.67,25 L106.67,18.67 C106.67,15.16 106.58,11.05 106.49,8.68 L106.64,8.68 C107.18,12.76 108.02,19.6 108.74,25 L112.49,25 C113.42,19.81 114.26,12.94 114.86,8.71 L114.98,8.71 C114.92,11.17 114.86,15.37 114.86,18.52 L114.86,25 Z M122.834965,25 L128.444965,25 C133.934965,25 136.064965,21.67 136.064965,14.47 C136.064965,7.75 133.904965,4.75 128.624965,4.75 L122.834965,4.75 L122.834965,25 Z M127.514965,8.32 L128.414965,8.32 C130.604965,8.32 131.174965,9.79 131.174965,14.41 C131.174965,19.93 130.544965,21.46 128.384965,21.46 L127.514965,21.46 L127.514965,8.32 Z" id="Combined-Shape" fill="#FFFFFF"></path>
+                <text id="PLATINUM" font-family="AcuminPro-Semibold, Acumin Pro" font-size="16" font-weight="500" letter-spacing="-0.514686" fill="#FFFFFF">
+                    <tspan x="11" y="21">PLATINUM</tspan>
+                </text>
+            </g>
+        </g>
+    </g>
+</svg>

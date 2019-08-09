@@ -1,40 +1,31 @@
 <template>
   <div id="wrapper">
-    <img id="logo" src="~@/assets/logo.png" alt="electron-vue">
+    <img id="logo" src="~@/assets/logo.svg" alt="Platinum MD">
     <main>
       <div class="left-side">
         <span class="title">
-          Welcome to your new project!
+          Local Files:
         </span>
-        <system-information></system-information>
+        <directory-listing></directory-listing>
       </div>
 
       <div class="right-side">
-        <div class="doc">
-          <div class="title">Getting Started</div>
-          <p>
-            electron-vue comes packed with detailed documentation that covers everything from
-            internal configurations, using the project structure, building your application,
-            and so much more.
-          </p>
-          <button @click="open('https://simulatedgreg.gitbooks.io/electron-vue/content/')">Read the Docs</button><br><br>
-        </div>
-        <div class="doc">
-          <div class="title alt">Other Documentation</div>
-          <button class="alt" @click="open('https://electron.atom.io/docs/')">Electron</button>
-          <button class="alt" @click="open('https://vuejs.org/v2/guide/')">Vue.js</button>
-        </div>
+        <span class="title">
+          NetMD Files:
+        </span>
+        <net-md-listing></net-md-listing>
       </div>
     </main>
   </div>
 </template>
 
 <script>
-  import SystemInformation from './LandingPage/SystemInformation'
+  import DirectoryListing from './LandingPage/DirectoryListing'
+  import NetMdListing from './LandingPage/NetMdListing'
 
   export default {
     name: 'landing-page',
-    components: { SystemInformation },
+    components: { DirectoryListing, NetMdListing },
     methods: {
       open (link) {
         this.$electron.shell.openExternal(link)
@@ -55,12 +46,7 @@
   body { font-family: 'Source Sans Pro', sans-serif; }
 
   #wrapper {
-    background:
-      radial-gradient(
-        ellipse at top left,
-        rgba(255, 255, 255, 1) 40%,
-        rgba(229, 229, 229, .9) 100%
-      );
+    background-image: radial-gradient(52% 131%, #00B5A7 48%, #007A9F 100%);
     height: 100vh;
     padding: 60px 80px;
     width: 100vw;
@@ -69,7 +55,8 @@
   #logo {
     height: auto;
     margin-bottom: 20px;
-    width: 420px;
+    width: 250px;
+    box-shadow: 10px 10px 5px -10px rgba(17,82,77,1);
   }
 
   main {
