@@ -8,6 +8,8 @@ const webpack = require('webpack')
 
 const BabiliWebpackPlugin = require('babili-webpack-plugin')
 
+let whiteListedModules = ['vue', 'bootstrap-vue']
+
 let mainConfig = {
   entry: {
     main: path.join(__dirname, '../src/main/index.js')
@@ -52,6 +54,9 @@ let mainConfig = {
     new webpack.NoEmitOnErrorsPlugin()
   ],
   resolve: {
+    alias: {
+      'vue$': 'vue/dist/vue.esm.js'
+    },
     extensions: ['.js', '.json', '.node']
   },
   target: 'electron-main'

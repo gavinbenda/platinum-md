@@ -1,0 +1,57 @@
+  @import url('https://fonts.googleapis.com/css?family=Source+Sans+Pro');
+  
+  $font-size-base: 0.8rem !default;
+
+  body { 
+    font-family: 'Source Sans Pro', sans-serif;
+  }
+
+  #wrapper {
+    background-image: radial-gradient(52% 131%, #00B5A7 48%, #007A9F 100%);
+    height: 100vh;
+    width: 100vw;
+  }
+
+  #logo {
+    height: auto;
+    margin-bottom: 20px;
+    width: 250px;
+    box-shadow: 10px 10px 5px -10px rgba(17,82,77,1);
+  }
+  
+  .white-bg {
+    background: #fff;
+  }
+  
+  .full-height {
+    height: 80vh;
+  }
+
+  .title {
+    color: #2c3e50;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+
+  .title.alt {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  
+  table {
+    margin-top: 30px;
+  }
+  
+  .title {
+    font-size: 12px;
+    color: #2c3e50;
+    font-size: 20px;
+    font-weight: bold;
+    margin-bottom: 6px;
+  }
+  
+  .toolbar {
+    background: #092D39;
+    color: #F3F4C9;
+  }

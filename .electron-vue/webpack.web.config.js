@@ -11,6 +11,8 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const { VueLoaderPlugin } = require('vue-loader')
 
+let whiteListedModules = ['vue', 'bootstrap-vue']
+
 let webConfig = {
   devtool: '#cheap-module-eval-source-map',
   entry: {
