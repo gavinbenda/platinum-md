@@ -61,6 +61,7 @@
     "axios": "^0.18.0",
     "bootstrap": "^4.3.1",
     "bootstrap-vue": "^2.0.0-rc.27",
+    "electron-store": "^4.0.0",
     "ffi": "^2.3.0",
     "file-type": "^12.1.0",
     "music-metadata": "^4.2.3",

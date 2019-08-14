@@ -8,6 +8,7 @@
         </b-col>
         <b-col class="text-right">
           <b-button variant="outline-light" @click="readNetMd">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
+          <b-button variant="danger" @click="deleteTracks">Delete <font-awesome-icon icon="times"></font-awesome-icon></b-button>
         </b-col>
       </b-row>
     </b-container>
@@ -38,13 +39,7 @@
           <span v-if="row.item.format == 'protected'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
         </div>
       </template>
-      
-      <template slot="options" slot-scope="row">
-        <b-button-group>
-          <b-button size="sm" @click="readNetMd"><font-awesome-icon icon="edit"></font-awesome-icon></b-button>
-          <b-button size="sm" @click="readNetMd"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
-        </b-button-group>
-      </template>
+
     </b-table>
     
   </div>
@@ -60,8 +55,7 @@ export default {
       fields: [
         { key: 'no', sortable: true },
         { key: 'name', sortable: true },
-        { key: 'formatted', label: '' },
-        { key: 'options', label: '' }
+        { key: 'formatted', label: '' }
       ],
       selected: []
     }
@@ -78,12 +72,14 @@ export default {
         // consume track listing
         // probably would be nicer to modify the python scripts to provide an API
         let response = data.toString()
-        // console.log(response)
+        console.log(response)
         this.lsmd = response.split(/\r\n|\r|\n/)
         // now store only tracks
         for (var i = 0, len = this.lsmd.length; i < len; i++) {
           let line = this.lsmd[i]
-          if (/^\d+$/.test(line.substr(0, 2)) && line.substr(3, 4)) {
+          // bit of a dirty way of finding out lines that are track info
+          // TODO: grab disc capacity here too
+          if (/^\d+$/.test(line.substr(0, 3)) && line.charAt(3) === ':') {
             let parts = line.split(/\s+/)
             let track = {
               no: parts[0],
@@ -101,7 +97,66 @@ export default {
         this.isBusy = false
       })
     },
-    rowSelected () {
+    /**
+      * Track which rows are selected
+      */
+    rowSelected: function (items) {
+      this.selected = items
+    },
+    /**
+      * Delete selected tracks
+      * This is async so it happens in order and awaits each delete action to finish
+      */
+    deleteTracks: async function () {
+      // loop through each selected track one-by-one
+      for (var i = 0, len = this.selected.length; i < len; i++) {
+        var trackNo = parseInt(this.selected[i].no, 10)
+        console.log('deleting: ' + trackNo)
+        let self = this
+        await self.deleteTrack(trackNo)
+          .then(await function () {
+            console.log(i + ': deleted' + trackNo)
+            // this feels a bit dirty, but works?
+            if ((i + 1) === self.selected.length) {
+              self.readNetMd()
+            }
+          })
+      }
+    },
+    /**
+      * Delete track using netmdcli
+      */
+    deleteTrack: function (trackNo) {
+      // this.progress = 'Deleting Track: ' + trackNo
+      return new Promise((resolve, reject) => {
+        let netmdcli = require('child_process').spawn('/Users/gavinbenda/webdev/linux-minidisc/netmdcli/netmdcli', ['delete', trackNo])
+        netmdcli.on('close', (code) => {
+          console.log(`child process exited with code ${code}`)
+          resolve()
+        })
+        netmdcli.on('error', (error) => {
+          console.log(`child process creating error with error ${error}`)
+          reject(error)
+        })
+      })
+    },
+    /**
+      * Rename track using netmdcli
+      */
+    renameTrack: function (trackNo, title) {
+      // this.progress = 'Renaming Track: ' + trackNo
+      return new Promise((resolve, reject) => {
+        trackNo = parseInt(trackNo, 10)
+        let netmdcli = require('child_process').spawn('/Users/gavinbenda/webdev/linux-minidisc/netmdcli/netmdcli', ['rename', trackNo, title])
+        netmdcli.on('close', (code) => {
+          console.log(`child process exited with code ${code}`)
+          resolve()
+        })
+        netmdcli.on('error', (error) => {
+          console.log(`child process creating error with error ${error}`)
+          reject(error)
+        })
+      })
     }
   }
 }

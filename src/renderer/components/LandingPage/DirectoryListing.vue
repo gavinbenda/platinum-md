@@ -3,9 +3,10 @@
     <b-container class="toolbar py-2">
       <b-row align-v="center">
         <b-col>
-          <b>{{ selected.length }}</b> tracks selected / <span v-if="progress">{{ progress }}</span>
+          <b>{{ selected.length }}</b> tracks selected <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
         </b-col>
         <b-col class="text-right">
+          <b-button variant="primary" @click="chooseDir">Folder <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
           <b-button variant="outline-light" @click="readDirectory">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
           <b-button variant="success" @click="upload">Transfer <font-awesome-icon icon="angle-double-right"></font-awesome-icon></b-button>
         </b-col>
@@ -44,10 +45,14 @@ const fs = require('fs-extra')
 const readChunk = require('read-chunk')
 const fileType = require('file-type')
 const mm = require('music-metadata')
+const { remote } = require('electron')
+const Store = require('electron-store')
+const store = new Store()
+
 export default {
   data () {
     return {
-      dir: '/Users/gavinbenda/Deezloader Music/Client Liaison - Client Liaison/',
+      dir: '',
       files: [],
       file: '',
       progress: 'Idle',
@@ -57,13 +62,31 @@ export default {
         { key: 'artist', sortable: true },
         'bitrate'
       ],
-      selected: []
+      selected: [],
+      processing: 0,
+      config: {}
     }
   },
   created () {
+    this.dir = store.get('baseDirectory')
+    console.log(this.dir)
+  },
+  mounted () {
     this.readDirectory()
   },
   methods: {
+    chooseDir: function () {
+      remote.dialog.showOpenDialog({
+        properties: ['openDirectory'],
+        defaultPath: this.dir
+      }, names => {
+        if (names != null) {
+          console.log('selected directory:' + names[0])
+          store.set('baseDirectory', names[0] + '/')
+          this.dir = store.get('baseDirectory')
+        }
+      })
+    },
     /**
       * Reads the selected directory and displays all compatable files
       * At this stage it's simply MP3's that contain metadata
@@ -74,29 +97,33 @@ export default {
       this.isBusy = true
       this.files = []
       // read the target directory
+      console.log(this.dir)
       fs.readdir(this.dir, (err, dir) => {
         // loop through results
         for (let filePath of dir) {
-          let buffer = readChunk.sync(this.dir + filePath, 0, fileType.minimumBytes)
-          let fileTypeInfo = fileType(buffer)
-          // only interestedin MP3 files at the moment, ignore all others
-          if (fileTypeInfo != null) {
-            if (fileTypeInfo.ext === 'mp3') {
-              // read metadata
-              mm.parseFile(this.dir + filePath, {native: true})
-                .then(metadata => {
-                  // write the relevent data to the files array
-                  this.files.push({
-                    fileName: filePath,
-                    artist: metadata.common.artist,
-                    title: metadata.common.title,
-                    format: fileTypeInfo.ext,
-                    bitrate: metadata.format.bitrate / 1000 + 'kbps'
+          // ensure that we're only working with files
+          if (fs.statSync(this.dir + filePath).isFile()) {
+            let buffer = readChunk.sync(this.dir + filePath, 0, fileType.minimumBytes)
+            let fileTypeInfo = fileType(buffer)
+            // only interestedin MP3 files at the moment, ignore all others
+            if (fileTypeInfo != null) {
+              if (fileTypeInfo.ext === 'mp3') {
+                // read metadata
+                mm.parseFile(this.dir + filePath, {native: true})
+                  .then(metadata => {
+                    // write the relevent data to the files array
+                    this.files.push({
+                      fileName: filePath,
+                      artist: metadata.common.artist,
+                      title: metadata.common.title,
+                      format: fileTypeInfo.ext,
+                      bitrate: metadata.format.bitrate / 1000 + 'kbps'
+                    })
                   })
-                })
-                .catch(err => {
-                  console.error(err.message)
-                })
+                  .catch(err => {
+                    console.error(err.message)
+                  })
+              }
             }
           }
         }
@@ -120,10 +147,11 @@ export default {
       for (var i = 0, len = this.selected.length; i < len; i++) {
         var filepath = this.dir + this.selected[i].fileName
         console.log(filepath)
+        this.processing = i + 1
         var sourceFile = filepath
         var destFile = filepath.replace('.mp3', '-raw.wav')
         var atracFile = filepath.replace('.mp3', '.at3')
-        var finalFile = this.selected[i].title + ' - ' + this.selected[i].artist // filepath.replace('.mp3', '.wav')
+        var finalFile = this.dir + this.selected[i].title + ' - ' + this.selected[i].artist + '.wav' // filepath.replace('.mp3', '.wav')
         let self = this
         await self.convertToWav(sourceFile, destFile)
           .then(await function () {
@@ -209,6 +237,7 @@ export default {
         let netmdcli = require('child_process').spawn('/Users/gavinbenda/webdev/linux-minidisc/netmdcli/netmdcli', ['send', file])
         netmdcli.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
+          this.progress = 'Idle'
           resolve()
         })
         netmdcli.on('error', (error) => {
