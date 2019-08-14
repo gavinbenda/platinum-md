@@ -70,7 +70,7 @@ export default {
     this.readNetMd()
   },
   methods: {
-    readNetMd () {
+    readNetMd: function () {
       this.tracks = []
       this.isBusy = true
       let py = require('child_process').spawn('python', ['/Users/gavinbenda/webdev/linux-minidisc/netmd/lsmd.py'])

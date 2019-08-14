@@ -64,25 +64,28 @@ export default {
     this.readDirectory()
   },
   methods: {
-    readDirectory () {
+    /**
+      * Reads the selected directory and displays all compatable files
+      * At this stage it's simply MP3's that contain metadata
+      * TODO: this can support direct WAV and FLAC input quite easily...
+      * TODO: there should be more promises used here
+      */
+    readDirectory: function () {
       this.isBusy = true
       this.files = []
+      // read the target directory
       fs.readdir(this.dir, (err, dir) => {
-        console.log(dir)
+        // loop through results
         for (let filePath of dir) {
-          console.log(filePath)
           let buffer = readChunk.sync(this.dir + filePath, 0, fileType.minimumBytes)
           let fileTypeInfo = fileType(buffer)
-          // only interestedin MP3 files at the moment
-          console.log(fileTypeInfo)
+          // only interestedin MP3 files at the moment, ignore all others
           if (fileTypeInfo != null) {
             if (fileTypeInfo.ext === 'mp3') {
-              console.log(fileTypeInfo.mime)
               // read metadata
               mm.parseFile(this.dir + filePath, {native: true})
                 .then(metadata => {
-                  console.log(metadata)
-                  // write the relevent data
+                  // write the relevent data to the files array
                   this.files.push({
                     fileName: filePath,
                     artist: metadata.common.artist,
@@ -102,38 +105,47 @@ export default {
       })
       this.isBusy = false
     },
-    rowSelected (items) {
+    /**
+      * Track which rows are selected
+      */
+    rowSelected: function (items) {
       this.selected = items
     },
-    upload () {
+    /**
+      * Upload (and convert) selected tracks to player
+      * This is async so it happens in order and awaits each upload to finish
+      */
+    upload: async function () {
+      // loop through each selected track one-by-one
       for (var i = 0, len = this.selected.length; i < len; i++) {
         var filepath = this.dir + this.selected[i].fileName
         console.log(filepath)
         var sourceFile = filepath
-        var destFile = filepath.replace('.mp3', '.wav')
+        var destFile = filepath.replace('.mp3', '-raw.wav')
         var atracFile = filepath.replace('.mp3', '.at3')
-        var finalFile = filepath.replace('.mp3', '-final.wav')
+        var finalFile = this.selected[i].title + ' - ' + this.selected[i].artist // filepath.replace('.mp3', '.wav')
         let self = this
-        self.convertToWav(sourceFile, destFile)
-          .then(function () {
+        await self.convertToWav(sourceFile, destFile)
+          .then(await function () {
             return self.convertToAtrac(destFile, atracFile)
           })
-          .then(function () {
+          .then(await function () {
             return self.convertToWavWrapper(atracFile, finalFile)
           })
-          .then(function () {
+          .then(await function () {
             return self.sendToPlayer(finalFile)
           })
-        // this should only proceed once all files have been created
       }
     },
-    convertToWav (source, dest) {
-      console.log('stage 1')
+    /**
+      * Convert input MP3 to WAV file using ffmpeg
+      * This MUST be 44100 and 16bit for the atrac encoder to work
+      */
+    convertToWav: function (source, dest) {
       this.progress = 'Converting to Wav'
       return new Promise((resolve, reject) => {
-        // let ffmpeg = require('child_process').execSync('ffmpeg -y -i "' + source + '" -acodec pcm_u8 -ar 44100 "' + dest + '"')
+        // spawn this task and resolve promise on close
         let ffmpeg = require('child_process').spawn('ffmpeg', ['-y', '-i', source, '-acodec', 'pcm_u8', '-ar', '44100', dest])
-        // console.log(ffmpeg)
         ffmpeg.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
           resolve()
@@ -144,12 +156,14 @@ export default {
         })
       })
     },
-    convertToAtrac (source, dest) {
-      console.log('stage 2')
+    /**
+      * Pass WAV file to atracdenc
+      * TODO: this is the longest part of the process, some user progress % feedback would be nice...
+      */
+    convertToAtrac: function (source, dest) {
       this.progress = 'Converting to Atrac'
-      let self = this
       return new Promise((resolve, reject) => {
-        // let atracdenc = require('child_process').execSync('/Users/gavinbenda/webdev/atracdenc/src/build/atracdenc -e atrac3 -i"' + source + '" -o "' + dest + '" --bitrate 128')
+        // spawn this task and resolve promise on close
         let atracdenc = require('child_process').spawn('/Users/gavinbenda/webdev/atracdenc/src/build/atracdenc', ['-e', 'atrac3', '-i', source, '-o', dest, '--bitrate', '128'])
         console.log(atracdenc)
         atracdenc.on('close', (code) => {
@@ -160,14 +174,17 @@ export default {
           console.log(`child process creating error with error ${error}`)
           reject(error)
         })
+        // we get a fair bit of useful progress data returned here for debugging
         atracdenc.stdout.on('data', function (data) {
           console.log('stdout: ' + data)
-          self.progress = data
         })
       })
     },
-    convertToWavWrapper (source, dest) {
-      console.log('stage 3')
+    /**
+      * Apply the WAV wrapper around the converted file
+      * This is required to be able to send using netmdcli
+      */
+    convertToWavWrapper: function (source, dest) {
       this.progress = 'Adding Wav Wrapper'
       return new Promise((resolve, reject) => {
         let ffmpeg2 = require('child_process').spawn('ffmpeg', ['-y', '-i', source, '-c', 'copy', dest])
@@ -182,12 +199,14 @@ export default {
         })
       })
     },
-    sendToPlayer (file) {
-      console.log('stage 4')
+    /**
+      * Send final file using netmdcli
+      * The filename is named {title} - {artist}
+      */
+    sendToPlayer: function (file) {
       this.progress = 'Sending to Player'
       return new Promise((resolve, reject) => {
         let netmdcli = require('child_process').spawn('/Users/gavinbenda/webdev/linux-minidisc/netmdcli/netmdcli', ['send', file])
-        // console.log(netmdcli)
         netmdcli.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
           resolve()
