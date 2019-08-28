@@ -1,10 +1,16 @@
 <template>
   <div>
     
+    <b-modal @ok="renameTrack" ref="rename-track" title="Rename Track">
+      <b-form-input v-model="renameTrackName" placeholder="Track Name"></b-form-input>
+    </b-modal>
+    
     <b-container class="toolbar py-2">
       <b-row align-v="center">
         <b-col>
-          <b>{{ tracks.length }}</b> tracks on NetMD
+          <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
+          <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.title }}</b-badge> 
+          <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
         </b-col>
         <b-col class="text-right">
           <b-button variant="outline-light" @click="readNetMd">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
@@ -16,7 +22,7 @@
     <b-table
       selectable
       striped
-      select-mode="range"
+      select-mode="single"
       selectedVariant="success"
       :items="tracks"
       :fields="fields"
@@ -30,13 +36,13 @@
       </div>
       
       <template slot="name" slot-scope="row">
-        <span v-if="row.item.name == ' '">Untitled</span><span v-else>{{ row.item.name }}</span>
+        <span v-if="row.item.name == ' '">Untitled</span><span v-else>{{ row.item.name }}</span> <a @click="showRenameModal(row.item.no, row.item.name)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
       </template>
       
       <template slot="formatted" slot-scope="row">
         <div class="text-right">
-          <b-badge variant="primary" class="text-uppercase">{{ row.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase">{{ row.item.stereo }}</b-badge>
-          <span v-if="row.item.format == 'protected'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
+          <b-badge variant="primary" class="text-uppercase">{{ row.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase"><span v-if="row.item.bitrate != 'LP2' && row.item.bitrate != 'LP4'">SP / </span>{{ row.item.bitrate }}</b-badge>
+          <span v-if="row.item.format == 'TrPROT'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
         </div>
       </template>
 
@@ -46,25 +52,37 @@
 </template>
 
 <script>
+import bus from '@/bus'
+import { netmdcliPath } from '@/binaries'
 export default {
   data () {
     return {
       lsmd: [],
+      info: { title: '', device: '' },
       tracks: [],
       isBusy: false,
       fields: [
         { key: 'no', sortable: true },
         { key: 'name', sortable: true },
+        { key: 'time', sortable: true },
         { key: 'formatted', label: '' }
       ],
-      selected: []
+      selected: [],
+      renameTrackName: '',
+      renameTrackId: 0
     }
   },
-  created () {
+  mounted () {
     this.readNetMd()
+    bus.$on('track-sent', () => {
+      this.readNetMd()
+    })
   },
   methods: {
-    readNetMd: function () {
+    /**
+      * Read track listingi n using lsmd.py
+      */
+    readNetMd2: function () {
       this.tracks = []
       this.isBusy = true
       let py = require('child_process').spawn('python', ['/Users/gavinbenda/webdev/linux-minidisc/netmd/lsmd.py'])
@@ -95,6 +113,32 @@ export default {
       })
       py.on('close', () => {
         this.isBusy = false
+      })
+    },
+    /**
+      * Use the netmdcli binary to read in info
+      * The python output is actually easier to work with but can't include that in the app easily
+      */
+    readNetMd: function () {
+      this.tracks = []
+      this.isBusy = true
+      return new Promise((resolve, reject) => {
+        let netmdcli = require('child_process').spawn(netmdcliPath, ['-v'])
+        netmdcli.on('close', (code) => {
+          console.log(`child process exited with code ${code}`)
+          this.isBusy = false
+          resolve()
+        })
+        netmdcli.stdout.on('data', data => {
+          // get JSON response from netmdcli, store full response for later
+          let response = JSON.parse(data.toString())
+          this.info = response
+          // parse track data into array format for table display
+          let results = Object.keys(response.tracks).map((key) => {
+            return response.tracks[key]
+          })
+          this.tracks = results
+        })
       })
     },
     /**
@@ -129,7 +173,7 @@ export default {
     deleteTrack: function (trackNo) {
       // this.progress = 'Deleting Track: ' + trackNo
       return new Promise((resolve, reject) => {
-        let netmdcli = require('child_process').spawn('/Users/gavinbenda/webdev/linux-minidisc/netmdcli/netmdcli', ['delete', trackNo])
+        let netmdcli = require('child_process').spawn(netmdcliPath, ['delete', trackNo])
         netmdcli.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
           resolve()
@@ -141,15 +185,25 @@ export default {
       })
     },
     /**
+      * Rename track modal
+      */
+    showRenameModal: function (trackNo, title) {
+      this.renameTrackName = title
+      this.renameTrackId = trackNo
+      this.$refs['rename-track'].show()
+    },
+    /**
       * Rename track using netmdcli
       */
     renameTrack: function (trackNo, title) {
       // this.progress = 'Renaming Track: ' + trackNo
       return new Promise((resolve, reject) => {
-        trackNo = parseInt(trackNo, 10)
-        let netmdcli = require('child_process').spawn('/Users/gavinbenda/webdev/linux-minidisc/netmdcli/netmdcli', ['rename', trackNo, title])
+        trackNo = parseInt(this.renameTrackId, 10)
+        console.log(trackNo + ':' + this.renameTrackName)
+        let netmdcli = require('child_process').spawn(netmdcliPath, ['rename', trackNo, this.renameTrackName])
         netmdcli.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
+          this.readNetMd()
           resolve()
         })
         netmdcli.on('error', (error) => {

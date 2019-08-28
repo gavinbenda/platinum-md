@@ -6,18 +6,18 @@
         <b-col class="p-3">
           <img id="logo" src="~@/assets/logo.svg" alt="Platinum MD">
         </b-col>
-        <b-col class="p-3">
-          Status
+        <b-col class="p-3 text-right">
+          <b-button variant="outline-light">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button>
         </b-col>
       </b-row>
     </b-container>
 
     <b-container fluid class="p-3">
       <b-row>
-        <b-col class="white-bg full-height mx-3 p-0">
+        <b-col class="white-bg full-height mx-3 p-0 overflow-auto">
           <directory-listing></directory-listing>
         </b-col>
-        <b-col class="white-bg full-height mx-3 p-0">
+        <b-col class="white-bg full-height mx-3 p-0 overflow-auto">
           <net-md-listing></net-md-listing>
         </b-col>
       </b-row>

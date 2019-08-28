@@ -52,12 +52,22 @@
     },
     "linux": {
       "icon": "build/icons"
-    }
+    },
+    "extraFiles": [
+    {
+        "from": "resources/mac/bin",
+        "to": "Resources/bin",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ]
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.21",
     "@fortawesome/free-solid-svg-icons": "^5.10.1",
     "@fortawesome/vue-fontawesome": "^0.1.6",
+    "app-root-dir": "^1.0.2",
     "axios": "^0.18.0",
     "bootstrap": "^4.3.1",
     "bootstrap-vue": "^2.0.0-rc.27",

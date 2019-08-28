@@ -591,6 +591,11 @@ app-builder-lib@20.44.4, app-builder-lib@~20.44.4:
     semver "^6.1.1"
     temp-file "^3.3.3"
 
+app-root-dir@^1.0.2:
+  version "1.0.2"
+  resolved "https://registry.yarnpkg.com/app-root-dir/-/app-root-dir-1.0.2.tgz#38187ec2dea7577fff033ffcb12172692ff6e118"
+  integrity sha1-OBh+wt6nV3//Az/8sSFyaS/24Rg=
+
 aproba@^1.0.3, aproba@^1.1.1:
   version "1.2.0"
   resolved "https://registry.yarnpkg.com/aproba/-/aproba-1.2.0.tgz#6802e6264efd18c790a1b0d517f0f2627bf2c94a"
