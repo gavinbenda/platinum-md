@@ -54,7 +54,7 @@
       "icon": "build/icons"
     },
     "extraFiles": [
-    {
+      {
         "from": "resources/mac/bin",
         "to": "Resources/bin",
         "filter": [
@@ -74,6 +74,7 @@
     "electron-store": "^4.0.0",
     "ffi": "^2.3.0",
     "file-type": "^12.1.0",
+    "jquery": "^3.4.1",
     "music-metadata": "^4.2.3",
     "read-chunk": "^3.2.0",
     "vue": "^2.5.16",

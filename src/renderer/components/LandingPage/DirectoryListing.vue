@@ -24,6 +24,8 @@
       @row-selected="rowSelected"
       responsive="sm"
       :busy="isBusy"
+      sortable="true"
+      sortBy="title"
     >
       <div slot="table-busy" class="text-center text-danger my-2">
         <b-spinner class="align-middle"></b-spinner>
@@ -32,7 +34,7 @@
       
       <template slot="bitrate" slot-scope="row">
         <div class="text-right">
-          <b-badge variant="success" class="text-uppercase">{{ row.item.bitrate }}</b-badge>
+          <b-badge variant="success" class="text-uppercase">{{ row.item.bitrate }} {{ row.item.codec }}</b-badge>
         </div>
       </template>
       
@@ -62,15 +64,20 @@ export default {
       fields: [
         { key: 'title', sortable: true },
         { key: 'artist', sortable: true },
+        { key: 'album', sortable: true },
+        { key: 'trackNo', sortable: true },
         'bitrate'
       ],
       selected: [],
       processing: 0,
-      config: {}
+      config: {},
+      conversionMode: 'SP',
+      bitrate: 128
     }
   },
   created () {
     this.dir = store.get('baseDirectory')
+    // this.conversionMode = store.get('conversionMode')
     console.log(this.dir)
   },
   mounted () {
@@ -110,17 +117,21 @@ export default {
             let fileTypeInfo = fileType(buffer)
             // only interestedin MP3 files at the moment, ignore all others
             if (fileTypeInfo != null) {
-              if (fileTypeInfo.ext === 'mp3') {
+              if (fileTypeInfo.ext === 'mp3' || fileTypeInfo.ext === 'wav' || fileTypeInfo.ext === 'flac') {
                 // read metadata
                 mm.parseFile(this.dir + filePath, {native: true})
                   .then(metadata => {
+                    console.log(metadata)
                     // write the relevent data to the files array
                     this.files.push({
                       fileName: filePath,
                       artist: metadata.common.artist,
                       title: metadata.common.title,
+                      album: metadata.common.album,
+                      trackNo: metadata.common.track.no,
                       format: fileTypeInfo.ext,
-                      bitrate: metadata.format.bitrate / 1000 + 'kbps'
+                      bitrate: metadata.format.bitrate / 1000 + 'kbps',
+                      codec: metadata.format.codec
                     })
                   })
                   .catch(err => {
@@ -148,19 +159,29 @@ export default {
     upload: async function () {
       // loop through each selected track one-by-one
       for (var i = 0, len = this.selected.length; i < len; i++) {
-        var filepath = this.dir + this.selected[i].fileName
-        console.log(filepath)
+        // create a temp directory for working files
+        // TODO: maybe some automated cleanup?
         this.processing = i + 1
-        var sourceFile = filepath
-        var destFile = filepath.replace('.mp3', '.raw.wav')
-        var atracFile = filepath.replace('.mp3', '.at3')
-        var finalFile = this.dir + this.selected[i].title + ' - ' + this.selected[i].artist + '.wav' // filepath.replace('.mp3', '.wav')
+        var fileName = this.selected[i].fileName
+        let tempDir = 'pmd-temp/'
+        try {
+          this.ensureDirSync(this.dir + 'pmd-temp')
+          console.log('Directory created')
+        } catch (err) {
+          console.error(err)
+        }
+        var filePath = this.dir + fileName
+        console.log(filePath)
+        var sourceFile = filePath
+        let fileExtension = '.' + sourceFile.split('.').pop()
+        var destFile = this.dir + tempDir + fileName.replace(fileExtension, '.raw.wav')
+        var atracFile = this.dir + tempDir + fileName.replace(fileExtension, '.at3')
+        var finalFile = this.dir + tempDir + this.selected[i].title + ' - ' + this.selected[i].artist + '.wav' // filepath.replace('.mp3', '.wav')
         let self = this
-        let conversionMode = 'SP'
         // If sending in SP mode
         // Convert to Wav and send to NetMD Device
         // The encoding process is handled by the NetMD device
-        if (conversionMode === 'SP') {
+        if (this.conversionMode === 'SP') {
           await self.convertToWav(sourceFile, finalFile)
             .then(await function () {
               return self.sendToPlayer(finalFile)
@@ -169,7 +190,7 @@ export default {
         // This uses an experimental ATRAC3 encoder
         // The files are converted into ATRAC locally, and then sent to the NetMD device
         } else {
-          await self.convertToWav(sourceFile, destFile)
+          await self.convertToWav(sourceFile, destFile, fileExtension)
             .then(await function () {
               return self.convertToAtrac(destFile, atracFile)
             })
@@ -186,11 +207,16 @@ export default {
       * Convert input MP3 to WAV file using ffmpeg
       * This MUST be 44100 and 16bit for the atrac encoder to work
       */
-    convertToWav: function (source, dest) {
+    convertToWav: function (source, dest, conversionMode) {
       this.progress = 'Converting to Wav'
       return new Promise((resolve, reject) => {
+        // check the filetype, and choose the output
+        let convertTo = 'pcm_u8'
+        if (this.conversionMode === 'SP') {
+          convertTo = 'pcm_s16le'
+        }
         // spawn this task and resolve promise on close
-        let ffmpeg = require('child_process').spawn(ffmpegPath, ['-y', '-i', source, '-acodec', 'pcm_s16le', '-ar', '44100', dest])
+        let ffmpeg = require('child_process').spawn(ffmpegPath, ['-y', '-i', source, '-acodec', convertTo, '-ar', '44100', dest])
         ffmpeg.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
           resolve()
@@ -212,7 +238,7 @@ export default {
           resolve()
         }
         // spawn this task and resolve promise on close
-        let atracdenc = require('child_process').spawn(atracdencPath, ['-e', 'atrac3', '-i', source, '-o', dest, '--bitrate', '128'])
+        let atracdenc = require('child_process').spawn(atracdencPath, ['-e', 'atrac3', '-i', source, '-o', dest, '--bitrate', this.bitrate])
         console.log(atracdenc)
         atracdenc.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
@@ -266,6 +292,16 @@ export default {
           reject(error)
         })
       })
+    },
+    /**
+      * Make sure temp directory actually exists, if not create it
+      */
+    ensureDirSync: function (dirpath) {
+      try {
+        fs.mkdirSync(dirpath, { recursive: true })
+      } catch (err) {
+        if (err.code !== 'EEXIST') throw err
+      }
     }
 
   }

@@ -5,11 +5,15 @@
       <b-form-input v-model="renameTrackName" placeholder="Track Name"></b-form-input>
     </b-modal>
     
+    <b-modal @ok="renameDisc" ref="rename-disc" title="Rename Disc">
+      <b-form-input v-model="info.title" placeholder="Disc Name"></b-form-input>
+    </b-modal>
+    
     <b-container class="toolbar py-2">
       <b-row align-v="center">
         <b-col>
           <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
-          <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.title }}</b-badge> 
+          <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }}</a></b-badge> 
           <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
         </b-col>
         <b-col class="text-right">
@@ -201,6 +205,30 @@ export default {
         trackNo = parseInt(this.renameTrackId, 10)
         console.log(trackNo + ':' + this.renameTrackName)
         let netmdcli = require('child_process').spawn(netmdcliPath, ['rename', trackNo, this.renameTrackName])
+        netmdcli.on('close', (code) => {
+          console.log(`child process exited with code ${code}`)
+          this.readNetMd()
+          resolve()
+        })
+        netmdcli.on('error', (error) => {
+          console.log(`child process creating error with error ${error}`)
+          reject(error)
+        })
+      })
+    },
+    /**
+      * Rename track modal
+      */
+    showRenameDiscModal: function () {
+      this.$refs['rename-disc'].show()
+    },
+    /**
+      * Rename disc using netmdcli
+      */
+    renameDisc: function () {
+      return new Promise((resolve, reject) => {
+        let title = this.info.title
+        let netmdcli = require('child_process').spawn(netmdcliPath, ['retitle', title])
         netmdcli.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
           this.readNetMd()

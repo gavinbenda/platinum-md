@@ -1,4 +1,4 @@
-# platinum-md
+# Platinum-MD
 
 > A Gui for NetMD
 
@@ -8,21 +8,37 @@
 # install dependencies
 npm install
 
-# serve with hot reload at localhost:9080
-npm run dev
-
 # build electron application for production
 npm run build
 
-# run unit tests
-npm test
-
-
-# lint all JS/Vue component files in `src/`
-npm run lint
-
 ```
 
----
+#### Dependancies
 
-This project was generated with [electron-vue](https://github.com/SimulatedGREG/electron-vue)@[8fae476](https://github.com/SimulatedGREG/electron-vue/tree/8fae4763e9d225d3691b627e83b9e09b56f6c935) using [vue-cli](https://github.com/vuejs/vue-cli). Documentation about the original structure can be found [here](https://simulatedgreg.gitbooks.io/electron-vue/content/index.html).
+This is quite tricky, as there are a few extras needed.
+Future releases will try and include a statically build binary for each included tool.
+
+You will need to install homebrew: https://docs.brew.sh/Installation
+Then from the command line, install the following:
+
+`# brew install libsndfile`
+
+`# brew install ffmpeg`
+
+You may also need to install (this can be a large download):
+
+`xcode-select --install`
+
+
+## Overview
+
+This project aims to make uploading audio files to NetMD players seamless and automatic.
+
+## Features
+
+Supports upload MP3/WAV/FLAC files direct to a compatible NetMD recorder.
+
+
+## Release Notes
+
+This is a very alpha release, expect bugs.
