@@ -9,6 +9,10 @@
       <b-form-input v-model="info.title" placeholder="Disc Name"></b-form-input>
     </b-modal>
     
+    <b-modal @ok="moveTrack" ref="move-track" title="Move Track">
+      <b-form-input v-model="newTrackPosition" placeholder="Move to position (number):"></b-form-input>
+    </b-modal>
+    
     <b-container class="toolbar py-2">
       <b-row align-v="center">
         <b-col>
@@ -40,7 +44,9 @@
       </div>
       
       <template slot="name" slot-scope="row">
-        <span v-if="row.item.name == ' '">Untitled</span><span v-else>{{ row.item.name }}</span> <a @click="showRenameModal(row.item.no, row.item.name)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
+        <span v-if="row.item.name == ' '">Untitled</span><span v-else>{{ row.item.name }}</span> 
+        <a @click="showRenameModal(row.item.no, row.item.name)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
+        <a @click="showMoveTrackModal"><font-awesome-icon icon="random"></font-awesome-icon></a>
       </template>
       
       <template slot="formatted" slot-scope="row">
@@ -73,7 +79,9 @@ export default {
       ],
       selected: [],
       renameTrackName: '',
-      renameTrackId: 0
+      renameTrackId: 0,
+      oldTrackPosition: 0,
+      newTrackPosition: 0
     }
   },
   mounted () {
@@ -230,6 +238,33 @@ export default {
         let title = this.info.title
         console.log(title)
         let netmdcli = require('child_process').spawn(netmdcliPath, ['settitle', title])
+        netmdcli.on('close', (code) => {
+          console.log(`child process exited with code ${code}`)
+          this.readNetMd()
+          resolve()
+        })
+        netmdcli.on('error', (error) => {
+          console.log(`child process creating error with error ${error}`)
+          reject(error)
+        })
+      })
+    },
+    /**
+      * Move track modal
+      */
+    showMoveTrackModal: function (trackNo) {
+      this.oldTrackPosition = trackNo
+      this.$refs['move-track'].show()
+    },
+    /**
+      * Move track using netmdcli
+      */
+    moveTrack: function () {
+      return new Promise((resolve, reject) => {
+        let moveFrom = this.oldTrackPosition
+        let moveTo = this.newTrackPosition
+        console.log(moveFrom + ' --> ' + moveTo)
+        let netmdcli = require('child_process').spawn(netmdcliPath, ['move', moveFrom, moveTo])
         netmdcli.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
           this.readNetMd()
