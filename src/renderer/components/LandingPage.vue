@@ -7,6 +7,7 @@
         <b-form-radio v-model="conversionMode" name="mode-lp2" value="LP2">LP2 (Fit more tracks)</b-form-radio>
       </b-form-group>
       <b-alert variant="success" show><b>Please note:</b> LP2 is implemented using an experimental encoder.<br />LP4 is currently not possible.</b-alert>
+      <b-button variant="outline-primary" @click="showDebugConsole">Debug Window</b-button>
     </b-modal>
     
     <b-container fluid class="px-3">
@@ -34,8 +35,10 @@
 </template>
 
 <script>
+  import bus from '@/bus'
   import DirectoryListing from './LandingPage/DirectoryListing'
   import NetMdListing from './LandingPage/NetMdListing'
+  const { remote } = require('electron')
   const Store = require('electron-store')
   const store = new Store()
   export default {
@@ -58,6 +61,13 @@
         */
       saveSettings: function () {
         store.set('conversionMode', this.conversionMode)
+        bus.$emit('config-update')
+      },
+      /**
+        * Show debug console
+        */
+      showDebugConsole: function () {
+        remote.getCurrentWindow().webContents.openDevTools()
       }
     }
   }

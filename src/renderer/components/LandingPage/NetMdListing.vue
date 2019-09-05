@@ -228,7 +228,8 @@ export default {
     renameDisc: function () {
       return new Promise((resolve, reject) => {
         let title = this.info.title
-        let netmdcli = require('child_process').spawn(netmdcliPath, ['retitle', title])
+        console.log(title)
+        let netmdcli = require('child_process').spawn(netmdcliPath, ['settitle', title])
         netmdcli.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
           this.readNetMd()

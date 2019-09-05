@@ -3,7 +3,7 @@
     <b-container class="toolbar py-2 m-0">
       <b-row align-v="center">
         <b-col>
-          <b>{{ selected.length }}</b> tracks selected<br />
+          <b>{{ selected.length }}</b> tracks selected {{ conversionMode }}<br />
           <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
         </b-col>
         <b-col class="text-right">
@@ -76,13 +76,10 @@ export default {
     }
   },
   created () {
-    if (store.has('baseDirectory')) {
-      this.dir = store.get('baseDirectory')
-    }
-    if (store.has('conversionMode')) {
-      this.conversionMode = store.get('conversionMode')
-    }
-    console.log(this.dir)
+    this.readConfig()
+    bus.$on('config-update', () => {
+      this.readConfig()
+    })
   },
   mounted () {
     this.readDirectory()
@@ -305,6 +302,17 @@ export default {
         fs.mkdirSync(dirpath, { recursive: true })
       } catch (err) {
         if (err.code !== 'EEXIST') throw err
+      }
+    },
+    /**
+      * Read-in config file
+      */
+    readConfig: function () {
+      if (store.has('baseDirectory')) {
+        this.dir = store.get('baseDirectory')
+      }
+      if (store.has('conversionMode')) {
+        this.conversionMode = store.get('conversionMode')
       }
     }
 
