@@ -3,7 +3,7 @@
   "version": "0.2.0",
   "author": "Gavin Benda",
   "description": "A Gui for NetMD",
-  "license": null,
+  "license": "MIT",
   "main": "./dist/electron/main.js",
   "scripts": {
     "build": "node .electron-vue/build.js && electron-builder",
