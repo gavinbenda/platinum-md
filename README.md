@@ -2,11 +2,13 @@
 
 > A Gui for NetMD
 
+![Screenshot](https://i.imgur.com/GdmUdYP.png)
+
 #### Dependancies
 
 This is quite tricky, as there are a few extras needed.
 
-Future releases will try and include a statically build binary for each included tool.
+Future releases will try and include a statically built binary for each included tool.
 
 You will need to install homebrew: https://docs.brew.sh/Installation
 
@@ -48,7 +50,7 @@ This is a very alpha release, expect bugs.
 * Some pre-recorded discs made with SonicStage may show as blank
 * Best to start with a completely blank disc
 * Bulk delete is not supported yet, but will be soon
-* Moving tracks is also not supported, but also will be very soon
+* ~~Moving tracks is also not supported, but also will be very soon~~
 * Sometimes a track or two may be missed, this is likely a race-condtion, will be fixed in the next release
 * Automatic CLI tools for installing dependancies is highly desirable
 * Linux release is imminent, starting with Ubuntu
