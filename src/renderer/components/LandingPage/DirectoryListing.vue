@@ -76,8 +76,12 @@ export default {
     }
   },
   created () {
-    this.dir = store.get('baseDirectory')
-    // this.conversionMode = store.get('conversionMode')
+    if (store.has('baseDirectory')) {
+      this.dir = store.get('baseDirectory')
+    }
+    if (store.has('conversionMode')) {
+      this.conversionMode = store.get('conversionMode')
+    }
     console.log(this.dir)
   },
   mounted () {

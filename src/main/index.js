@@ -24,7 +24,7 @@ function createWindow () {
     useContentSize: true,
     width: 1000
   })
-
+  mainWindow.webContents.openDevTools()
   mainWindow.loadURL(winURL)
 
   mainWindow.on('closed', () => {
