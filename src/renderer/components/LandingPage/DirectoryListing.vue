@@ -177,7 +177,7 @@ export default {
         let fileExtension = '.' + sourceFile.split('.').pop()
         var destFile = this.dir + tempDir + fileName.replace(fileExtension, '.raw.wav')
         var atracFile = this.dir + tempDir + fileName.replace(fileExtension, '.at3')
-        var finalFile = this.dir + tempDir + this.selected[i].title + ' - ' + this.selected[i].artist + '.wav' // filepath.replace('.mp3', '.wav')
+        var finalFile = this.dir + tempDir + this.selected[i].title.substring(0, 50) + ' - ' + this.selected[i].artist.substring(0, 50) + '.wav' // filepath.replace('.mp3', '.wav')
         let self = this
         // If sending in SP mode
         // Convert to Wav and send to NetMD Device
