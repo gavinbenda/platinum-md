@@ -92,42 +92,6 @@ export default {
   },
   methods: {
     /**
-      * Read track listingi n using lsmd.py
-      */
-    readNetMd2: function () {
-      this.tracks = []
-      this.isBusy = true
-      let py = require('child_process').spawn('python', ['/Users/gavinbenda/webdev/linux-minidisc/netmd/lsmd.py'])
-      py.stdout.on('data', data => {
-        // consume track listing
-        // probably would be nicer to modify the python scripts to provide an API
-        let response = data.toString()
-        console.log(response)
-        this.lsmd = response.split(/\r\n|\r|\n/)
-        // now store only tracks
-        for (var i = 0, len = this.lsmd.length; i < len; i++) {
-          let line = this.lsmd[i]
-          // bit of a dirty way of finding out lines that are track info
-          // TODO: grab disc capacity here too
-          if (/^\d+$/.test(line.substr(0, 3)) && line.charAt(3) === ':') {
-            let parts = line.split(/\s+/)
-            let track = {
-              no: parts[0],
-              format: parts[2],
-              stereo: parts[3],
-              status: parts[4],
-              name: line.split(' ').slice(5).join(' ')
-            }
-            console.log(track)
-            this.tracks.push(track)
-          }
-        }
-      })
-      py.on('close', () => {
-        this.isBusy = false
-      })
-    },
-    /**
       * Use the netmdcli binary to read in info
       * The python output is actually easier to work with but can't include that in the app easily
       */
