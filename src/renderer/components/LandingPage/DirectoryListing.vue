@@ -182,6 +182,7 @@ export default {
         // If sending in SP mode
         // Convert to Wav and send to NetMD Device
         // The encoding process is handled by the NetMD device
+        console.log('Starting conversion in <' + this.conversionMode + '> mode')
         if (this.conversionMode === 'SP') {
           await self.convertToWav(sourceFile, finalFile)
             .then(await function () {
@@ -217,14 +218,21 @@ export default {
           convertTo = 'pcm_s16le'
         }
         // spawn this task and resolve promise on close
+        console.log('Starting WAV conversion process using ffmpeg')
         let ffmpeg = require('child_process').spawn(ffmpegPath, ['-y', '-i', source, '-acodec', convertTo, '-ar', '44100', dest])
         ffmpeg.on('close', (code) => {
-          console.log(`child process exited with code ${code}`)
-          resolve()
+          if (code === 0) {
+            console.log('ffmpeg returned Success code ' + code)
+            resolve()
+          }
         })
         ffmpeg.on('error', (error) => {
-          console.log(`child process creating error with error ${error}`)
+          console.log(`ffmpeg errored with error ${error}`)
           reject(error)
+        })
+        ffmpeg.stdout.on('data', data => {
+          // get response from ffmpeg
+          console.log(data.toString())
         })
       })
     },
@@ -242,16 +250,18 @@ export default {
         let atracdenc = require('child_process').spawn(atracdencPath, ['-e', 'atrac3', '-i', source, '-o', dest, '--bitrate', this.bitrate])
         console.log(atracdenc)
         atracdenc.on('close', (code) => {
-          console.log(`child process exited with code ${code}`)
-          resolve()
+          if (code === 0) {
+            console.log('atracdenc returned Success code ' + code)
+            resolve()
+          }
         })
         atracdenc.on('error', (error) => {
-          console.log(`child process creating error with error ${error}`)
+          console.log(`atracdenc errored with error ${error}`)
           reject(error)
         })
         // we get a fair bit of useful progress data returned here for debugging
-        atracdenc.stdout.on('data', function (data) {
-          console.log('stdout: ' + data)
+        atracdenc.stdout.on('data', data => {
+          console.log(data.toString())
         })
       })
     },
@@ -280,17 +290,24 @@ export default {
       */
     sendToPlayer: function (file) {
       this.progress = 'Sending to Player'
+      console.log('Attempting to send to NetMD device')
       return new Promise((resolve, reject) => {
         let netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file])
         netmdcli.on('close', (code) => {
-          console.log(`child process exited with code ${code}`)
+          if (code === 0) {
+            console.log('netmdcli send returned Success code ' + code)
+          }
           this.progress = 'Idle'
           bus.$emit('track-sent')
           resolve()
         })
         netmdcli.on('error', (error) => {
-          console.log(`child process creating error with error ${error}`)
+          console.log(`netmdcli send errored with error ${error}`)
           reject(error)
+        })
+        // we get a fair bit of useful progress data returned here for debugging
+        netmdcli.stdout.on('data', data => {
+          console.log(data.toString())
         })
       })
     },

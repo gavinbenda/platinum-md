@@ -96,24 +96,35 @@ export default {
       * The python output is actually easier to work with but can't include that in the app easily
       */
     readNetMd: function () {
+      console.log('Attempting to read from NetMD')
       this.tracks = []
       this.isBusy = true
       return new Promise((resolve, reject) => {
         let netmdcli = require('child_process').spawn(netmdcliPath, ['-v'])
         netmdcli.on('close', (code) => {
-          console.log(`child process exited with code ${code}`)
           this.isBusy = false
-          resolve()
+          if (code === 0) {
+            console.log('netmdcli returned Success code ' + code)
+            resolve()
+          }
+        })
+        netmdcli.on('error', (error) => {
+          console.log(`child process creating error with error ${error}`)
+          reject(error)
         })
         netmdcli.stdout.on('data', data => {
           // get JSON response from netmdcli, store full response for later
-          let response = JSON.parse(data.toString())
-          this.info = response
-          // parse track data into array format for table display
-          let results = Object.keys(response.tracks).map((key) => {
-            return response.tracks[key]
-          })
-          this.tracks = results
+          let stringData = data.toString()
+          console.log(stringData)
+          if (this.IsJsonString(stringData)) {
+            let jsonData = JSON.parse(stringData)
+            this.info = jsonData
+            // parse track data into array format for table display
+            let results = Object.keys(jsonData.tracks).map((key) => {
+              return jsonData.tracks[key]
+            })
+            this.tracks = results
+          }
         })
       })
     },
@@ -239,6 +250,14 @@ export default {
           reject(error)
         })
       })
+    },
+    IsJsonString: function (str) {
+      try {
+        JSON.parse(str)
+      } catch (e) {
+        return false
+      }
+      return true
     }
   }
 }
