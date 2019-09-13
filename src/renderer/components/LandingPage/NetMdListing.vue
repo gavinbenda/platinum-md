@@ -43,10 +43,14 @@
         <strong>Loading...</strong>
       </div>
       
+      <template slot="no" slot-scope="row">
+        {{ row.item.no + 1 }}
+      </template>
+      
       <template slot="name" slot-scope="row">
         <span v-if="row.item.name == ' '">Untitled</span><span v-else>{{ row.item.name }}</span> 
         <a @click="showRenameModal(row.item.no, row.item.name)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
-        <a @click="showMoveTrackModal"><font-awesome-icon icon="random"></font-awesome-icon></a>
+        <a @click="showMoveTrackModal(row.item.no)"><font-awesome-icon icon="random"></font-awesome-icon></a>
       </template>
       
       <template slot="formatted" slot-scope="row">
@@ -237,7 +241,8 @@ export default {
     moveTrack: function () {
       return new Promise((resolve, reject) => {
         let moveFrom = this.oldTrackPosition
-        let moveTo = this.newTrackPosition
+        let moveTo = this.newTrackPosition - 1
+        console.log('Moving track # ' + moveFrom + ' to #' + moveTo)
         console.log(moveFrom + ' --> ' + moveTo)
         let netmdcli = require('child_process').spawn(netmdcliPath, ['move', moveFrom, moveTo])
         netmdcli.on('close', (code) => {
