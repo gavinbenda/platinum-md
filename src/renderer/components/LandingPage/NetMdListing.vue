@@ -26,7 +26,7 @@
         </b-col>
       </b-row>
     </b-container>
-    
+
     <b-table
       selectable
       striped
@@ -43,20 +43,20 @@
         <strong>Loading...</strong>
       </div>
       
-      <template slot="no" slot-scope="row">
-        {{ row.item.no + 1 }}
+      <template v-slot:cell(no)="data">
+        {{ data.item.no + 1 }}
       </template>
       
-      <template slot="name" slot-scope="row">
-        <span v-if="row.item.name == ' '">Untitled</span><span v-else>{{ row.item.name }}</span> 
-        <a @click="showRenameModal(row.item.no, row.item.name)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
-        <a @click="showMoveTrackModal(row.item.no)"><font-awesome-icon icon="random"></font-awesome-icon></a>
+      <template v-slot:cell(name)="data">
+        <span v-if="data.item.name == ' '">Untitled</span><span v-else>{{ data.item.name }}</span> yo
+        <a @click="showRenameModal(data.item.no, data.item.name)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
+        <a @click="showMoveTrackModal(data.item.no)"><font-awesome-icon icon="random"></font-awesome-icon></a>
       </template>
       
-      <template slot="formatted" slot-scope="row">
+      <template v-slot:cell(formatted)="data">
         <div class="text-right">
-          <b-badge variant="primary" class="text-uppercase">{{ row.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase"><span v-if="row.item.bitrate != 'LP2' && row.item.bitrate != 'LP4'">SP / </span>{{ row.item.bitrate }}</b-badge>
-          <span v-if="row.item.format == 'TrPROT'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
+          <b-badge variant="primary" class="text-uppercase">{{ data.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase"><span v-if="data.item.bitrate != 'LP2' && data.item.bitrate != 'LP4'">SP / </span>{{ data.item.bitrate }}</b-badge>
+          <span v-if="data.item.format == 'TrPROT'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
         </div>
       </template>
 

@@ -32,9 +32,9 @@
         <strong>Loading...</strong>
       </div>
       
-      <template slot="bitrate" slot-scope="row">
+      <template v-slot:cell(bitrate)="data">
         <div class="text-right">
-          <b-badge variant="success" class="text-uppercase">{{ row.item.bitrate }} {{ row.item.codec }}</b-badge>
+          <b-badge variant="success" class="text-uppercase">{{ data.item.bitrate }} {{ data.item.codec }}</b-badge>
         </div>
       </template>
       
