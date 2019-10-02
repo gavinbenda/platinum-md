@@ -177,7 +177,7 @@ export default {
         let fileExtension = '.' + sourceFile.split('.').pop()
         var destFile = this.dir + tempDir + fileName.replace(fileExtension, '.raw.wav')
         var atracFile = this.dir + tempDir + fileName.replace(fileExtension, '.at3')
-        var finalFile = this.dir + tempDir + this.selected[i].title.substring(0, 50) + ' - ' + this.selected[i].artist.substring(0, 50) + '.wav' // filepath.replace('.mp3', '.wav')
+        var finalFile = this.dir + tempDir + this.selected[i].title.substring(0, 50).replace('/', '_') + ' - ' + this.selected[i].artist.substring(0, 50).replace('/', '_') + '.wav' // filepath.replace('.mp3', '.wav')
         let self = this
         // If sending in SP mode
         // Convert to Wav and send to NetMD Device
@@ -218,12 +218,15 @@ export default {
           convertTo = 'pcm_s16le'
         }
         // spawn this task and resolve promise on close
-        console.log('Starting WAV conversion process using ffmpeg')
-        let ffmpeg = require('child_process').spawn(ffmpegPath, ['-y', '-i', source, '-acodec', convertTo, '-ar', '44100', dest])
+        console.log('Starting WAV conversion process using ffmpeg: ' + source + ' --> ' + dest)
+        let ffmpeg = require('child_process').spawn(ffmpegPath, ['-y', '-i', '"' + source + '"', '-acodec', convertTo, '-ar', '44100', '"' + dest + '"'], { shell: true })
         ffmpeg.on('close', (code) => {
+          console.log('ffmpeg returned code ' + code)
           if (code === 0) {
-            console.log('ffmpeg returned Success code ' + code)
             resolve()
+          } else {
+            console.log(ffmpeg)
+            reject(code)
           }
         })
         ffmpeg.on('error', (error) => {

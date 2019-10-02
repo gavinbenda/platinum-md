@@ -48,7 +48,7 @@
       </template>
       
       <template v-slot:cell(name)="data">
-        <span v-if="data.item.name == ' '">Untitled</span><span v-else>{{ data.item.name }}</span> yo
+        <span v-if="data.item.name == ' '">Untitled</span><span v-else>{{ data.item.name }}</span>
         <a @click="showRenameModal(data.item.no, data.item.name)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
         <a @click="showMoveTrackModal(data.item.no)"><font-awesome-icon icon="random"></font-awesome-icon></a>
       </template>
