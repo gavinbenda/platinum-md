@@ -291,18 +291,35 @@ export default {
       * Send final file using netmdcli
       * The filename is named {title} - {artist}
       */
-    sendToPlayer: function (file) {
+    sendToPlayer: async function (file) {
       this.progress = 'Sending to Player'
       console.log('Attempting to send to NetMD device')
+      // send off command, we wrap this so it can be retryed
+      // not 100% on this method, may refactor in the future
+      let retries = 5
+      for (let i = 0, len = retries; i < len; i++) {
+        try {
+          await this.sendCommand(file)
+          break
+        } catch (err) {
+          console.log('Attempt to send file failed, retrying...')
+          await new Promise((resolve, reject) => setTimeout(resolve, 2000))
+        }
+      }
+    },
+    sendCommand: function (file) {
       return new Promise((resolve, reject) => {
         let netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file])
         netmdcli.on('close', (code) => {
           if (code === 0) {
             console.log('netmdcli send returned Success code ' + code)
+            bus.$emit('track-sent')
+            resolve()
+          } else {
+            console.log('netmdcli error, returned ' + code)
+            reject(code)
           }
           this.progress = 'Idle'
-          bus.$emit('track-sent')
-          resolve()
         })
         netmdcli.on('error', (error) => {
           console.log(`netmdcli send errored with error ${error}`)
@@ -335,7 +352,6 @@ export default {
         this.conversionMode = store.get('conversionMode')
       }
     }
-
   }
 }
 </script>
