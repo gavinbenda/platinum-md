@@ -1953,7 +1953,7 @@ boom@2.x.x:
   dependencies:
     hoek "2.x.x"
 
-bootstrap-vue@^2.2.2:
+bootstrap-vue@^2.0.2:
   version "2.0.2"
   resolved "https://registry.yarnpkg.com/bootstrap-vue/-/bootstrap-vue-2.0.2.tgz#92082574e0fe34a65ce4c07b8777471b7a1402dd"
   integrity sha512-hbGJjc/om9JfVNUFK76dnh+YutlZdZlKbpWw6OE9gHTkmbwstP/KxxELpZZgK/4SYtdxUPt/6W1CvdaeT1bNvQ==
