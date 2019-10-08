@@ -123,16 +123,23 @@ export default {
                 mm.parseFile(this.dir + filePath, {native: true})
                   .then(metadata => {
                     console.log(metadata)
+                    // Get data for file object
+                    let artist = metadata.common.artist
+                    let title = metadata.common.title
+                    let album = metadata.common.album
+                    let bitrate = metadata.format.bitrate
+                    let codec = metadata.format.codec
+                    let trackNo = metadata.common.track.no
                     // write the relevent data to the files array
                     this.files.push({
                       fileName: filePath,
-                      artist: metadata.common.artist,
-                      title: metadata.common.title,
-                      album: metadata.common.album,
-                      trackNo: metadata.common.track.no,
+                      artist: (artist !== null) ? artist.substring(0, 50).replace('/', '_') : '',
+                      title: (title !== null) ? title.substring(0, 50).replace('/', '_') : '',
+                      album: (album !== null) ? album : '',
+                      trackNo: (trackNo !== null) ? trackNo : 0,
                       format: fileTypeInfo.ext,
-                      bitrate: metadata.format.bitrate / 1000 + 'kbps',
-                      codec: metadata.format.codec
+                      bitrate: (bitrate !== null) ? bitrate / 1000 + 'kbps' : '-',
+                      codec: (codec !== null) ? codec : ''
                     })
                   })
                   .catch(err => {
@@ -177,7 +184,7 @@ export default {
         let fileExtension = '.' + sourceFile.split('.').pop()
         var destFile = this.dir + tempDir + fileName.replace(fileExtension, '.raw.wav')
         var atracFile = this.dir + tempDir + fileName.replace(fileExtension, '.at3')
-        var finalFile = this.dir + tempDir + this.selected[i].title.substring(0, 50).replace('/', '_') + ' - ' + this.selected[i].artist.substring(0, 50).replace('/', '_') + '.wav' // filepath.replace('.mp3', '.wav')
+        var finalFile = this.dir + tempDir + this.selected[i].title + ' - ' + this.selected[i].artist + '.wav' // filepath.replace('.mp3', '.wav')
         let self = this
         // If sending in SP mode
         // Convert to Wav and send to NetMD Device
