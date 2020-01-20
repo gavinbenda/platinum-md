@@ -20,7 +20,7 @@ Then install the following:
 
 #### Installation
 
-Download the latest release, and open the dmg.
+Download the [latest release](https://github.com/gavinbenda/platinum-md/releases), and open the dmg.
 
 Drag the file to the applications folder.
 
