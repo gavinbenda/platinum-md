@@ -4553,6 +4553,11 @@ ffi@^2.3.0:
     ref "1"
     ref-struct "1"
 
+ffmpeg-static@^2.7.0:
+  version "2.7.0"
+  resolved "https://registry.yarnpkg.com/ffmpeg-static/-/ffmpeg-static-2.7.0.tgz#e1b050f7c0457595fceccec7d8bb04cdb8f223dc"
+  integrity sha512-Khjg/4tCBen58ixhXlkRNqs3hUKpTOlGOUrw859M09tdjeMkXyXRQ+YuJjGczRhGO7Y8fHPJZcQ37V/OzvZvjQ==
+
 figgy-pudding@^3.5.1:
   version "3.5.1"
   resolved "https://registry.yarnpkg.com/figgy-pudding/-/figgy-pudding-3.5.1.tgz#862470112901c727a0e495a80744bd5baa1d6790"
