@@ -122,14 +122,14 @@ export default {
                 // read metadata
                 mm.parseFile(this.dir + filePath, {native: true})
                   .then(metadata => {
-                    console.log(metadata)
+                    // console.log(metadata)
                     // Get data for file object
-                    let artist = metadata.common.artist
-                    let title = metadata.common.title
-                    let album = metadata.common.album
-                    let bitrate = metadata.format.bitrate
-                    let codec = metadata.format.codec
-                    let trackNo = metadata.common.track.no
+                    let artist = (metadata.common.artist !== undefined) ? metadata.common.artist : 'No Artist'
+                    let title = (metadata.common.title !== undefined) ? metadata.common.title : 'Untitled'
+                    let album = (metadata.common.album !== undefined) ? metadata.common.album : '-'
+                    let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
+                    let codec = (metadata.format.codec !== undefined) ? metadata.format.codec : ''
+                    let trackNo = (metadata.common.track.no !== undefined) ? metadata.common.track.no : ''
                     // write the relevent data to the files array
                     this.files.push({
                       fileName: filePath,
