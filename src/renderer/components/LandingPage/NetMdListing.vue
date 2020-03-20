@@ -44,7 +44,15 @@
       </div>
       
       <template v-slot:cell(no)="data">
-        {{ data.item.no + 1 }}
+        <h5 class="mb-0"><b-badge>{{ data.item.no + 1 }}</b-badge></h5>
+      </template>
+      
+      <template v-slot:cell(name)="data">
+        {{ data.item.name }}
+      </template>
+      
+      <template v-slot:cell(time)="data">
+        <i>{{ data.item.time }}</i>
       </template>
       
       <template v-slot:cell(name)="data">
@@ -55,7 +63,7 @@
       
       <template v-slot:cell(formatted)="data">
         <div class="text-right">
-          <b-badge variant="primary" class="text-uppercase">{{ data.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase"><span v-if="data.item.bitrate != 'LP2' && data.item.bitrate != 'LP4'">SP / </span>{{ data.item.bitrate }}</b-badge>
+          <b-badge variant="primary" class="text-uppercase">{{ data.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase"><span v-if="data.item.bitrate != 'LP2' && data.item.bitrate != 'LP4'">SP / </span> -</b-badge>
           <span v-if="data.item.format == 'TrPROT'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
         </div>
       </template>

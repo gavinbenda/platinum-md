@@ -60,6 +60,12 @@
         <strong>Loading...</strong>
       </div>
       
+      <template v-slot:cell(trackNo)="data">
+        <div>
+          <h5 class="mb-0"><b-badge>{{ data.item.trackNo }}</b-badge></h5>
+        </div>
+      </template>
+      
       <template v-slot:cell(bitrate)="data">
         <div class="text-right">
           <b-badge variant="success" class="text-uppercase">{{ data.item.bitrate }} {{ data.item.codec }}</b-badge>
