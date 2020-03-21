@@ -10,10 +10,10 @@ import BootstrapVue from 'bootstrap-vue'
 import './scss/styles.scss'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faAngleDoubleRight, faSyncAlt, faLock, faLockOpen, faEdit, faTimes, faFolderOpen, faCog, faRandom } from '@fortawesome/free-solid-svg-icons'
+import { faAngleDoubleRight, faSyncAlt, faLock, faLockOpen, faEdit, faTimes, faFolderOpen, faCog, faRandom, faHeadphones } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-library.add(faAngleDoubleRight, faSyncAlt, faLock, faLockOpen, faEdit, faTimes, faFolderOpen, faCog, faRandom)
+library.add(faAngleDoubleRight, faSyncAlt, faLock, faLockOpen, faEdit, faTimes, faFolderOpen, faCog, faRandom, faHeadphones)
 
 Vue.component('font-awesome-icon', FontAwesomeIcon)
 

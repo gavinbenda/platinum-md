@@ -13,62 +13,82 @@
       <b-form-input v-model="newTrackPosition" placeholder="Move to position (number):"></b-form-input>
     </b-modal>
     
-    <b-container class="toolbar py-2">
-      <b-row align-v="center">
-        <b-col>
-          <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
-          <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }}</a></b-badge> 
-          <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
-        </b-col>
-        <b-col class="text-right">
-          <b-button variant="outline-light" @click="readNetMd">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
-          <b-button variant="danger" @click="deleteTracks">Delete <font-awesome-icon icon="times"></font-awesome-icon></b-button>
-        </b-col>
-      </b-row>
-    </b-container>
-
-    <b-table
-      selectable
-      striped
-      select-mode="single"
-      selectedVariant="success"
-      :items="tracks"
-      :fields="fields"
-      @row-selected="rowSelected"
-      responsive="sm"
-      :busy="isBusy"
-    >
-      <div slot="table-busy" class="text-center text-danger my-2">
-        <b-spinner class="align-middle"></b-spinner>
-        <strong>Loading...</strong>
-      </div>
+    <b-overlay :show="showOverlay" rounded="md" class="full-height">
+      <b-container class="toolbar py-2">
+        <b-row align-v="center">
+          <b-col>
+            <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
+            <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }}</a></b-badge> 
+            <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
+          </b-col>
+          <b-col class="text-right">
+            <b-button variant="outline-light" @click="readNetMd">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
+            <b-button variant="danger" @click="deleteTracks">Delete <font-awesome-icon icon="times"></font-awesome-icon></b-button>
+          </b-col>
+        </b-row>
+      </b-container>
+  
+      <b-table
+        selectable
+        striped
+        select-mode="single"
+        selectedVariant="success"
+        :items="tracks"
+        :fields="fields"
+        @row-selected="rowSelected"
+        responsive="sm"
+        :busy="isBusy"
+      >
+        <div slot="table-busy" class="text-center text-danger my-2">
+          <b-spinner class="align-middle"></b-spinner>
+          <strong>Loading...</strong>
+        </div>
+        
+        <template v-slot:cell(no)="data">
+          <h5 class="mb-0"><b-badge>{{ data.item.no + 1 }}</b-badge></h5>
+        </template>
+        
+        <template v-slot:cell(name)="data">
+          {{ data.item.name }}
+        </template>
+        
+        <template v-slot:cell(time)="data">
+          <i>{{ data.item.time }}</i>
+        </template>
+        
+        <template v-slot:cell(name)="data">
+          <span v-if="data.item.name == ' '">Untitled</span><span v-else>{{ data.item.name }}</span>
+          <a @click="showRenameModal(data.item.no, data.item.name)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
+          <a @click="showMoveTrackModal(data.item.no)"><font-awesome-icon icon="random"></font-awesome-icon></a>
+        </template>
+        
+        <template v-slot:cell(formatted)="data">
+          <div class="text-right">
+            <b-badge variant="primary" class="text-uppercase">{{ data.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase"><span v-if="data.item.bitrate != 'LP2' && data.item.bitrate != 'LP4'">SP / </span> -</b-badge>
+            <span v-if="data.item.format == 'TrPROT'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
+          </div>
+        </template>
+  
+      </b-table>
       
-      <template v-slot:cell(no)="data">
-        <h5 class="mb-0"><b-badge>{{ data.item.no + 1 }}</b-badge></h5>
-      </template>
-      
-      <template v-slot:cell(name)="data">
-        {{ data.item.name }}
-      </template>
-      
-      <template v-slot:cell(time)="data">
-        <i>{{ data.item.time }}</i>
-      </template>
-      
-      <template v-slot:cell(name)="data">
-        <span v-if="data.item.name == ' '">Untitled</span><span v-else>{{ data.item.name }}</span>
-        <a @click="showRenameModal(data.item.no, data.item.name)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
-        <a @click="showMoveTrackModal(data.item.no)"><font-awesome-icon icon="random"></font-awesome-icon></a>
-      </template>
-      
-      <template v-slot:cell(formatted)="data">
-        <div class="text-right">
-          <b-badge variant="primary" class="text-uppercase">{{ data.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase"><span v-if="data.item.bitrate != 'LP2' && data.item.bitrate != 'LP4'">SP / </span> -</b-badge>
-          <span v-if="data.item.format == 'TrPROT'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
+      <template v-slot:overlay>
+                
+        <div class="text-center">
+          <font-awesome-icon icon="headphones" size="5x"></font-awesome-icon>
+          <p id="cancel-label" class="mt-2">Device not detected.<br />Please connect/reconnect device to continue...</p>
+          <b-button
+            ref="cancel"
+            variant="outline-success"
+            size="md"
+            aria-describedby="cancel-label"
+            @click="readNetMd"
+          >
+            Retry <font-awesome-icon icon="sync-alt"></font-awesome-icon>
+          </b-button>
         </div>
       </template>
-
-    </b-table>
+      
+    </b-overlay>
     
   </div>
 </template>
@@ -93,13 +113,22 @@ export default {
       renameTrackName: '',
       renameTrackId: 0,
       oldTrackPosition: 0,
-      newTrackPosition: 0
+      newTrackPosition: 0,
+      showOverlay: true
     }
   },
   mounted () {
     this.readNetMd()
     bus.$on('track-sent', () => {
       this.readNetMd()
+    })
+    bus.$on('netmd-status', (data) => {
+      console.log(data.eventType)
+      if (data.eventType === 'busy') {
+        this.showOverlay = true
+      } else {
+        this.showOverlay = false
+      }
     })
   },
   methods: {
@@ -108,6 +137,7 @@ export default {
       * The python output is actually easier to work with but can't include that in the app easily
       */
     readNetMd: function () {
+      bus.$emit('netmd-status', { eventType: 'busy' })
       console.log('Attempting to read from NetMD')
       this.tracks = []
       this.isBusy = true
@@ -136,6 +166,8 @@ export default {
               return jsonData.tracks[key]
             })
             this.tracks = results
+            // Getting a response was successful, notify
+            bus.$emit('netmd-status', { eventType: 'ready' })
           }
         })
       })
@@ -263,6 +295,14 @@ export default {
           reject(error)
         })
       })
+    },
+    onShown () {
+      // Focus the cancel button when the overlay is showing
+      this.$refs.cancel.focus()
+    },
+    onHidden () {
+      // Focus the show button when the overlay is removed
+      this.$refs.show.focus()
     },
     IsJsonString: function (str) {
       try {
