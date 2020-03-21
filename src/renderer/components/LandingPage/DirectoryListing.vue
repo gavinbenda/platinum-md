@@ -1,5 +1,33 @@
 <template>
   <div>
+  
+    <b-modal @ok="editTrack" ref="edit-track" title="Edit Track">
+      <b-row class="my-1">
+        <b-col sm="2">
+          <label for="input-small">No:</label>
+        </b-col>
+        <b-col sm="10">
+          <b-form-input v-model="selectedTrack.trackNo" placeholder="Track Number:"></b-form-input>
+        </b-col>
+      </b-row>
+      <b-row class="my-1">
+        <b-col sm="2">
+          <label for="input-small">Artist:</label>
+        </b-col>
+        <b-col sm="10">
+          <b-form-input v-model="selectedTrack.title" placeholder="Title"></b-form-input>
+        </b-col>
+      </b-row>
+      <b-row class="my-1">
+        <b-col sm="2">
+          <label for="input-small">Title:</label>
+        </b-col>
+        <b-col sm="10">
+          <b-form-input v-model="selectedTrack.artist" placeholder="Artist"></b-form-input>
+        </b-col>
+      </b-row>
+    </b-modal>
+    
     <b-container class="toolbar py-2 m-0">
       <b-row align-v="center">
         <b-col>
@@ -32,9 +60,21 @@
         <strong>Loading...</strong>
       </div>
       
+      <template v-slot:cell(trackNo)="data">
+        <div>
+          <h5 class="mb-0"><b-badge>{{ data.item.trackNo }}</b-badge></h5>
+        </div>
+      </template>
+      
       <template v-slot:cell(bitrate)="data">
         <div class="text-right">
           <b-badge variant="success" class="text-uppercase">{{ data.item.bitrate }} {{ data.item.codec }}</b-badge>
+        </div>
+      </template>
+      
+      <template v-slot:cell(options)="data">
+        <div class="text-right">
+          <a @click="showEditModal(data.item)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
         </div>
       </template>
       
@@ -46,6 +86,7 @@
 <script>
 import bus from '@/bus'
 import { atracdencPath, ffmpegPath, netmdcliPath } from '@/binaries'
+import clone from 'lodash/clone'
 const fs = require('fs-extra')
 const readChunk = require('read-chunk')
 const fileType = require('file-type')
@@ -62,17 +103,22 @@ export default {
       progress: 'Idle',
       isBusy: true,
       fields: [
+        { key: 'trackNo', sortable: true, label: 'No' },
         { key: 'title', sortable: true },
         { key: 'artist', sortable: true },
-        { key: 'album', sortable: true },
-        { key: 'trackNo', sortable: true },
-        'bitrate'
+        // { key: 'album', sortable: true },
+        'bitrate',
+        { key: 'options', label: '' }
       ],
       selected: [],
       processing: 0,
       config: {},
       conversionMode: 'SP',
-      bitrate: 128
+      bitrate: 128,
+      selectedTrack: {
+        trackNo: 0
+      },
+      selectedTrackSource: {}
     }
   },
   created () {
@@ -122,14 +168,14 @@ export default {
                 // read metadata
                 mm.parseFile(this.dir + filePath, {native: true})
                   .then(metadata => {
-                    console.log(metadata)
+                    // console.log(metadata)
                     // Get data for file object
-                    let artist = metadata.common.artist
-                    let title = metadata.common.title
-                    let album = metadata.common.album
-                    let bitrate = metadata.format.bitrate
-                    let codec = metadata.format.codec
-                    let trackNo = metadata.common.track.no
+                    let artist = (metadata.common.artist !== undefined) ? metadata.common.artist : 'No Artist'
+                    let title = (metadata.common.title !== undefined) ? metadata.common.title : 'Untitled'
+                    let album = (metadata.common.album !== undefined) ? metadata.common.album : '-'
+                    let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
+                    let codec = (metadata.format.codec !== undefined) ? metadata.format.codec : ''
+                    let trackNo = (metadata.common.track.no !== undefined) ? metadata.common.track.no : ''
                     // write the relevent data to the files array
                     this.files.push({
                       fileName: filePath,
@@ -138,7 +184,7 @@ export default {
                       album: (album !== null) ? album : '',
                       trackNo: (trackNo !== null) ? trackNo : 0,
                       format: fileTypeInfo.ext,
-                      bitrate: (bitrate !== null) ? bitrate / 1000 + 'kbps' : '-',
+                      bitrate: (bitrate !== null) ? Math.round(bitrate / 1000) + 'kbps' : '-',
                       codec: (codec !== null) ? codec : ''
                     })
                   })
@@ -337,6 +383,23 @@ export default {
           console.log(data.toString())
         })
       })
+    },
+    /**
+      * Move track modal
+      */
+    showEditModal: function (track) {
+      console.log(track)
+      this.selectedTrack = clone(track, true)
+      this.selectedTrackSource = track
+      this.$refs['edit-track'].show()
+    },
+    /**
+    * Edit track
+    */
+    editTrack: function () {
+      this.selectedTrackSource.trackNo = this.selectedTrack.trackNo
+      this.selectedTrackSource.title = this.selectedTrack.title
+      this.selectedTrackSource.artist = this.selectedTrack.artist
     },
     /**
       * Make sure temp directory actually exists, if not create it
