@@ -184,7 +184,7 @@ export default {
                       album: (album !== null) ? album : '',
                       trackNo: (trackNo !== null) ? trackNo : 0,
                       format: fileTypeInfo.ext,
-                      bitrate: (bitrate !== null) ? bitrate / 1000 + 'kbps' : '-',
+                      bitrate: (bitrate !== null) ? Math.round(bitrate / 1000) + 'kbps' : '-',
                       codec: (codec !== null) ? codec : ''
                     })
                   })
