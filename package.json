@@ -45,23 +45,32 @@
       ]
     },
     "mac": {
-      "icon": "build/icons/icon.icns"
+      "icon": "build/icons/icon.icns",
+      "extraFiles": [
+        {
+          "from": "resources/mac/bin",
+          "to": "Resources/bin",
+          "filter": [
+            "**/*"
+          ]
+        }
+      ]
     },
     "win": {
-      "icon": "build/icons/icon.ico"
+      "icon": "build/icons/icon.ico",
+      "extraFiles": [
+        {
+          "from": "resources/windows/bin",
+          "to": "Resources/bin",
+          "filter": [
+            "**/*"
+          ]
+        }
+      ]
     },
     "linux": {
       "icon": "build/icons"
-    },
-    "extraFiles": [
-      {
-        "from": "resources/mac/bin",
-        "to": "Resources/bin",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ]
+    }
   },
   "dependencies": {
     "@fortawesome/fontawesome-svg-core": "^1.2.21",
