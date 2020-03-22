@@ -87,6 +87,8 @@
 import bus from '@/bus'
 import { atracdencPath, ffmpegPath, netmdcliPath } from '@/binaries'
 import clone from 'lodash/clone'
+import os from 'os'
+import path from 'path'
 const fs = require('fs-extra')
 const readChunk = require('read-chunk')
 const fileType = require('file-type')
@@ -138,7 +140,7 @@ export default {
       }, names => {
         if (names != null) {
           console.log('selected directory:' + names[0])
-          store.set('baseDirectory', names[0] + '/')
+          store.set('baseDirectory', names[0] + path.sep)
           this.dir = store.get('baseDirectory')
           this.readDirectory()
         }
@@ -176,11 +178,22 @@ export default {
                     let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
                     let codec = (metadata.format.codec !== undefined) ? metadata.format.codec : ''
                     let trackNo = (metadata.common.track.no !== undefined) ? metadata.common.track.no : ''
+
+                    // filter forbidden filesystem characters
+                    // Windows list from: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+                    if (os.platform() === 'win32') {
+                      artist = (artist !== null) ? artist.substring(0, 50).replace(/[<>:"/\\|?*]/g, '_') : ''
+                      title = (title !== null) ? title.substring(0, 50).replace(/[<>:"/\\|?*]/g, '_') : ''
+                    } else {
+                      artist = (artist !== null) ? artist.substring(0, 50).replace('/', '_') : ''
+                      title = (title !== null) ? title.substring(0, 50).replace('/', '_') : ''
+                    }
+
                     // write the relevent data to the files array
                     this.files.push({
                       fileName: filePath,
-                      artist: (artist !== null) ? artist.substring(0, 50).replace('/', '_') : '',
-                      title: (title !== null) ? title.substring(0, 50).replace('/', '_') : '',
+                      artist,
+                      title,
                       album: (album !== null) ? album : '',
                       trackNo: (trackNo !== null) ? trackNo : 0,
                       format: fileTypeInfo.ext,
@@ -217,7 +230,7 @@ export default {
         // TODO: maybe some automated cleanup?
         this.processing = i + 1
         var fileName = this.selected[i].fileName
-        let tempDir = 'pmd-temp/'
+        let tempDir = 'pmd-temp' + path.sep
         try {
           this.ensureDirSync(this.dir + 'pmd-temp')
           console.log('Directory created')
