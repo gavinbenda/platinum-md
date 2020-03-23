@@ -35,9 +35,9 @@
           <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
         </b-col>
         <b-col class="text-right">
-          <b-button variant="primary" @click="chooseDir">Folder <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
-          <b-button variant="outline-light" @click="readDirectory">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
-          <b-button variant="success" @click="upload">Transfer <font-awesome-icon icon="angle-double-right"></font-awesome-icon></b-button>
+          <b-button variant="primary" @click="chooseDir" :disabled="isBusy">Folder <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
+          <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
+          <b-button variant="success" @click="upload" :disabled="isBusy">Transfer <font-awesome-icon icon="angle-double-right"></font-awesome-icon></b-button>
         </b-col>
       </b-row>
     </b-container>
@@ -51,7 +51,6 @@
       :fields="fields"
       @row-selected="rowSelected"
       responsive="sm"
-      :busy="isBusy"
       sortable="true"
       sortBy="title"
     >
@@ -73,7 +72,7 @@
       </template>
       
       <template v-slot:cell(options)="data">
-        <div class="text-right">
+        <div class="text-right" v-if="!isBusy">
           <a @click="showEditModal(data.item)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
         </div>
       </template>
@@ -85,13 +84,14 @@
 
 <script>
 import bus from '@/bus'
-import { atracdencPath, ffmpegPath, netmdcliPath } from '@/binaries'
+import { atracdencPath, netmdcliPath } from '@/binaries'
 import clone from 'lodash/clone'
 const fs = require('fs-extra')
 const readChunk = require('read-chunk')
 const fileType = require('file-type')
 const mm = require('music-metadata')
 const { remote } = require('electron')
+const ffmpeg = require('fluent-ffmpeg')
 const Store = require('electron-store')
 const store = new Store()
 export default {
@@ -123,12 +123,20 @@ export default {
   },
   created () {
     this.readConfig()
-    bus.$on('config-update', () => {
-      this.readConfig()
-    })
   },
   mounted () {
     this.readDirectory()
+    bus.$on('config-update', () => {
+      this.readConfig()
+    })
+    bus.$on('netmd-status', (data) => {
+      console.log(data.eventType)
+      if (data.eventType === 'busy' || data.eventType === 'no-connection') {
+        this.isBusy = true
+      } else {
+        this.isBusy = false
+      }
+    })
   },
   methods: {
     chooseDir: function () {
@@ -212,6 +220,7 @@ export default {
       */
     upload: async function () {
       // loop through each selected track one-by-one
+      bus.$emit('netmd-status', { eventType: 'busy' })
       for (var i = 0, len = this.selected.length; i < len; i++) {
         // create a temp directory for working files
         // TODO: maybe some automated cleanup?
@@ -257,6 +266,7 @@ export default {
             })
         }
       }
+      bus.$emit('netmd-status', { eventType: 'transfer-completed' })
     },
     /**
       * Convert input MP3 to WAV file using ffmpeg
@@ -270,26 +280,26 @@ export default {
         if (this.conversionMode === 'SP') {
           convertTo = 'pcm_s16le'
         }
-        // spawn this task and resolve promise on close
+        // Start conversion
         console.log('Starting WAV conversion process using ffmpeg: ' + source + ' --> ' + dest)
-        let ffmpeg = require('child_process').spawn(ffmpegPath, ['-y', '-i', '"' + source + '"', '-acodec', convertTo, '-ar', '44100', '"' + dest + '"'], { shell: true })
-        ffmpeg.on('close', (code) => {
-          console.log('ffmpeg returned code ' + code)
-          if (code === 0) {
+        ffmpeg(source)
+          .audioCodec(convertTo)
+          .output(dest)
+          .audioFrequency(44100)
+          .on('progress', function (progress) {
+            console.log('Processing: ' + progress.timemark + ' done ' + progress.targetSize + ' kilobytes')
+          })
+          // If successful, resolve
+          .on('end', function () {
+            console.log('ffmpeg completed successfully')
             resolve()
-          } else {
-            console.log(ffmpeg)
-            reject(code)
-          }
-        })
-        ffmpeg.on('error', (error) => {
-          console.log(`ffmpeg errored with error ${error}`)
-          reject(error)
-        })
-        ffmpeg.stdout.on('data', data => {
-          // get response from ffmpeg
-          console.log(data.toString())
-        })
+          })
+          // Reject if we get any errors
+          .on('error', function (err) {
+            console.log('ffmpeg error: ' + err.message)
+            reject(err.message)
+          })
+          .run()
       })
     },
     /**
@@ -328,16 +338,22 @@ export default {
     convertToWavWrapper: function (source, dest) {
       this.progress = 'Adding Wav Wrapper'
       return new Promise((resolve, reject) => {
-        let ffmpeg2 = require('child_process').spawn(ffmpegPath, ['-y', '-i', source, '-c', 'copy', dest])
-        // console.log(ffmpeg2)
-        ffmpeg2.on('close', (code) => {
-          console.log(`child process exited with code ${code}`)
-          resolve()
-        })
-        ffmpeg2.on('error', (error) => {
-          console.log(`child process creating error with error ${error}`)
-          reject(error)
-        })
+        ffmpeg(source)
+          .output(dest)
+          .on('progress', function (progress) {
+            console.log('Processing: ' + progress.timemark + ' done ' + progress.targetSize + ' kilobytes')
+          })
+          // If successful, resolve
+          .on('end', function () {
+            console.log('ffmpeg completed successfully')
+            resolve()
+          })
+          // Reject if we get any errors
+          .on('error', function (err) {
+            console.log('ffmpeg error: ' + err.message)
+            reject(err.message)
+          })
+          .run()
       })
     },
     /**

@@ -22,8 +22,8 @@
             <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
           </b-col>
           <b-col class="text-right">
-            <b-button variant="outline-light" @click="readNetMd">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
-            <b-button variant="danger" @click="deleteTracks">Delete <font-awesome-icon icon="times"></font-awesome-icon></b-button>
+            <b-button variant="outline-light" @click="readNetMd" :disabled="isBusy">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
+            <b-button variant="danger" @click="deleteTracks" :disabled="isBusy">Delete <font-awesome-icon icon="times"></font-awesome-icon></b-button>
           </b-col>
         </b-row>
       </b-container>
@@ -37,7 +37,6 @@
         :fields="fields"
         @row-selected="rowSelected"
         responsive="sm"
-        :busy="isBusy"
       >
         <div slot="table-busy" class="text-center text-danger my-2">
           <b-spinner class="align-middle"></b-spinner>
@@ -63,7 +62,7 @@
         </template>
         
         <template v-slot:cell(formatted)="data">
-          <div class="text-right">
+          <div class="text-right" v-if="!isBusy">
             <b-badge variant="primary" class="text-uppercase">{{ data.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase"><span v-if="data.item.bitrate != 'LP2' && data.item.bitrate != 'LP4'">SP / </span> -</b-badge>
             <span v-if="data.item.format == 'TrPROT'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
           </div>
@@ -75,7 +74,7 @@
                 
         <div class="text-center">
           <font-awesome-icon icon="headphones" size="5x"></font-awesome-icon>
-          <p id="cancel-label" class="mt-2">Device not detected.<br />Please connect/reconnect device to continue...</p>
+          <p id="cancel-label" class="mt-2">Device not detected.<br />Please connect/reconnect device to continue.</p>
           <b-button
             ref="cancel"
             variant="outline-success"
@@ -124,10 +123,15 @@ export default {
     })
     bus.$on('netmd-status', (data) => {
       console.log(data.eventType)
-      if (data.eventType === 'busy') {
+      if (data.eventType === 'no-connection') {
         this.showOverlay = true
       } else {
         this.showOverlay = false
+      }
+      if (data.eventType === 'busy' || data.eventType === 'no-connection') {
+        this.isBusy = true
+      } else {
+        this.isBusy = false
       }
     })
   },
@@ -137,14 +141,12 @@ export default {
       * The python output is actually easier to work with but can't include that in the app easily
       */
     readNetMd: function () {
-      bus.$emit('netmd-status', { eventType: 'busy' })
+      bus.$emit('netmd-status', { eventType: 'no-connection' })
       console.log('Attempting to read from NetMD')
       this.tracks = []
-      this.isBusy = true
       return new Promise((resolve, reject) => {
         let netmdcli = require('child_process').spawn(netmdcliPath, ['-v'])
         netmdcli.on('close', (code) => {
-          this.isBusy = false
           if (code === 0) {
             console.log('netmdcli returned Success code ' + code)
             resolve()

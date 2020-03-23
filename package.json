@@ -1,6 +1,6 @@
 {
   "name": "platinum-md",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "author": "Gavin Benda",
   "description": "A Gui for NetMD",
   "license": "MIT",
@@ -27,7 +27,10 @@
       "output": "build"
     },
     "files": [
-      "dist/electron/**/*"
+      "dist/electron/**/*",
+      "node_modules/ffmpeg-static/bin/${os}/${arch}/ffmpeg",
+      "node_modules/ffmpeg-static/index.js",
+      "node_modules/ffmpeg-static/package.json"
     ],
     "dmg": {
       "contents": [
@@ -45,13 +48,25 @@
       ]
     },
     "mac": {
-      "icon": "build/icons/icon.icns"
+      "icon": "build/icons/icon.icns",
+      "files": [
+        "!node_modules/ffmpeg-static/bin/win${/*}",
+        "!node_modules/ffmpeg-static/bin/linux${/*}"
+      ]
     },
     "win": {
-      "icon": "build/icons/icon.ico"
+      "icon": "build/icons/icon.ico",
+      "files": [
+        "!node_modules/ffmpeg-static/bin/mac${/*}",
+        "!node_modules/ffmpeg-static/bin/linux${/*}"
+      ]
     },
     "linux": {
-      "icon": "build/icons"
+      "icon": "build/icons",
+      "files": [
+        "!node_modules/ffmpeg-static/bin/mac${/*}",
+        "!node_modules/ffmpeg-static/bin/win${/*}"
+      ]
     },
     "extraFiles": [
       {
@@ -74,7 +89,9 @@
     "electron-store": "^4.0.0",
     "ffi": "^2.3.0",
     "ffmpeg-static": "^2.7.0",
+    "ffmpeg-static-electron": "^2.0.1",
     "file-type": "^12.1.0",
+    "fluent-ffmpeg": "^2.1.2",
     "jquery": "^3.4.1",
     "music-metadata": "^4.2.3",
     "read-chunk": "^3.2.0",

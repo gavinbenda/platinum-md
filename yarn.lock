@@ -783,6 +783,11 @@ async@1.x, async@^1.5.2:
   resolved "https://registry.yarnpkg.com/async/-/async-1.5.2.tgz#ec6a61ae56480c0c3cb241c95618e20892f9672a"
   integrity sha1-7GphrlZIDAw8skHJVhjiCJL5Zyo=
 
+async@>=0.2.9:
+  version "3.2.0"
+  resolved "https://registry.yarnpkg.com/async/-/async-3.2.0.tgz#b3a2685c5ebb641d3de02d161002c60fc9f85720"
+  integrity sha512-TR2mEZFVOj2pLStYxLht7TyfuRzaydfpxr3k9RpHIzMgw7A64dzsdqCxH1WJyQdoe8T10nDXd9wnEigmiuHIZw==
+
 async@^2.0.0, async@~2.6.0:
   version "2.6.3"
   resolved "https://registry.yarnpkg.com/async/-/async-2.6.3.tgz#d72625e2344a3656e3a3ad4fa749fa83299d82ff"
@@ -4563,6 +4568,11 @@ ffi@^2.3.0:
     ref "1"
     ref-struct "1"
 
+ffmpeg-static-electron@^2.0.1:
+  version "2.0.1"
+  resolved "https://registry.yarnpkg.com/ffmpeg-static-electron/-/ffmpeg-static-electron-2.0.1.tgz#edaa332d2a7109262211533aa0996eda793db2f7"
+  integrity sha512-tLOZJu2PJbDT7oMPhaAmmTZEZZms9R9D2FyhqsBrGlVhfqMi/ipuwNdogwk0+QEnDKaPhXwIgdnkd5Gn5tDXjw==
+
 ffmpeg-static@^2.7.0:
   version "2.7.0"
   resolved "https://registry.yarnpkg.com/ffmpeg-static/-/ffmpeg-static-2.7.0.tgz#e1b050f7c0457595fceccec7d8bb04cdb8f223dc"
@@ -4726,6 +4736,14 @@ flatten@^1.0.2:
   version "1.0.2"
   resolved "https://registry.yarnpkg.com/flatten/-/flatten-1.0.2.tgz#dae46a9d78fbe25292258cc1e780a41d95c03782"
   integrity sha1-2uRqnXj74lKSJYzB54CkHZXAN4I=
+
+fluent-ffmpeg@^2.1.2:
+  version "2.1.2"
+  resolved "https://registry.yarnpkg.com/fluent-ffmpeg/-/fluent-ffmpeg-2.1.2.tgz#c952de2240f812ebda0aa8006d7776ee2acf7d74"
+  integrity sha1-yVLeIkD4EuvaCqgAbXd27irPfXQ=
+  dependencies:
+    async ">=0.2.9"
+    which "^1.1.1"
 
 flush-write-stream@^1.0.0:
   version "1.1.1"
