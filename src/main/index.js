@@ -25,7 +25,15 @@ function createWindow () {
     width: 1400
   })
   mainWindow.loadURL(winURL)
-
+  // Open dev tools initially when in development mode
+  if (process.env.NODE_ENV === 'development') {
+    mainWindow.webContents.on('did-frame-finish-load', () => {
+      mainWindow.webContents.once('devtools-opened', () => {
+        mainWindow.focus()
+      })
+      mainWindow.webContents.openDevTools()
+    })
+  }
   mainWindow.on('closed', () => {
     mainWindow = null
   })
