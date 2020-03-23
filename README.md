@@ -69,3 +69,10 @@ The Linux-Minidisc project (this is the most up-to-date Fork I've found, but the
 The ATRAC Encoder by @dcherednik
 
 <https://github.com/dcherednik/atracdenc>
+
+## Donate
+
+I do this as a personal project, and a few people have expressed interested in donating to keep the project going, this will simply go back into buying test hardware and/or possibly coffee.
+
+[![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XVS44CZYFPCJJ)
+
