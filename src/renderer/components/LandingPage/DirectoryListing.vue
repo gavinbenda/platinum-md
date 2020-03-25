@@ -52,7 +52,7 @@
       @row-selected="rowSelected"
       responsive="sm"
       sortable="true"
-      sortBy="title"
+      sortBy="trackNo"
     >
       <div slot="table-busy" class="text-center text-danger my-2">
         <b-spinner class="align-middle"></b-spinner>
@@ -87,6 +87,7 @@ import bus from '@/bus'
 import { atracdencPath, netmdcliPath } from '@/binaries'
 import clone from 'lodash/clone'
 const fs = require('fs-extra')
+const del = require('del')
 const readChunk = require('read-chunk')
 const fileType = require('file-type')
 const mm = require('music-metadata')
@@ -220,8 +221,9 @@ export default {
       */
     upload: async function () {
       // loop through each selected track one-by-one
-      bus.$emit('netmd-status', { eventType: 'busy' })
       for (var i = 0, len = this.selected.length; i < len; i++) {
+        console.log('Processing track: ' + i)
+        bus.$emit('netmd-status', { eventType: 'busy' })
         // create a temp directory for working files
         // TODO: maybe some automated cleanup?
         this.processing = i + 1
@@ -233,11 +235,15 @@ export default {
         } catch (err) {
           console.error(err)
         }
-        // Conver to desired format
+        // Convert to desired format
         let finalFile = await this.convert(fileName, this.selected[i])
+        console.log('Conversion Complete.')
         await this.sendToPlayer(finalFile)
+        bus.$emit('netmd-status', { eventType: 'transfer-completed' })
       }
-      bus.$emit('netmd-status', { eventType: 'transfer-completed' })
+      // Clean up
+      const deletedPaths = await del.sync([this.dir + 'pmd-temp'], {force: true})
+      console.log('Deleting:\n', deletedPaths.join('\n'))
     },
     /**
       * Convert input MP3 to WAV file using ffmpeg
@@ -257,10 +263,9 @@ export default {
         // If sending in SP mode
         // Convert to Wav and send to NetMD Device
         // The encoding process is handled by the NetMD device
-        console.log('Starting conversion in <' + this.conversionMode + '> mode')
+        console.log('Starting conversion in <' + this.conversionMode + '> mode', 'color:blue')
         if (this.conversionMode === 'SP') {
-          await self.convertToWav(sourceFile, destFile, fileExtension)
-          await self.sendToPlayer(finalFile)
+          await self.convertToWav(sourceFile, finalFile, fileExtension)
         // uploading as LP2
         // This uses an experimental ATRAC3 encoder
         // The files are converted into ATRAC locally, and then sent to the NetMD device
@@ -268,8 +273,8 @@ export default {
           await self.convertToWav(sourceFile, destFile, fileExtension)
           await self.convertToAtrac(destFile, atracFile)
           await self.convertToWavWrapper(atracFile, finalFile)
-          resolve(finalFile)
         }
+        resolve(finalFile)
       })
     },
     /**
