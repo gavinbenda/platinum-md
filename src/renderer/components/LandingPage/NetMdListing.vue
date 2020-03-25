@@ -57,8 +57,9 @@
         
         <template v-slot:cell(name)="data">
           <span v-if="data.item.name == ' '">Untitled</span><span v-else>{{ data.item.name }}</span>
-          <a @click="showRenameModal(data.item.no, data.item.name)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
-          <a @click="showMoveTrackModal(data.item.no)"><font-awesome-icon icon="random"></font-awesome-icon></a>
+          <a @click="showRenameModal(data.item.no, data.item.name)" title="Edit Track"><font-awesome-icon icon="edit"></font-awesome-icon></a>
+          <a @click="showMoveTrackModal(data.item.no)" title="Move Track"><font-awesome-icon icon="random"></font-awesome-icon></a>
+          <a @click="runAction('play', data.item.no)" title="Play Track"><font-awesome-icon icon="play"></font-awesome-icon></a>
         </template>
         
         <template v-slot:cell(formatted)="data">
@@ -133,6 +134,9 @@ export default {
       } else {
         this.isBusy = false
       }
+    })
+    bus.$on('track-action', (data) => {
+      this.runAction(data.action, data.trackNo)
     })
   },
   methods: {
@@ -290,6 +294,22 @@ export default {
         netmdcli.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
           this.readNetMd()
+          resolve()
+        })
+        netmdcli.on('error', (error) => {
+          console.log(`child process creating error with error ${error}`)
+          reject(error)
+        })
+      })
+    },
+    /**
+      * Run an action on a track (play/pause/stop/skip)
+      */
+    runAction: function (action, trackNo = 0) {
+      return new Promise((resolve, reject) => {
+        let netmdcli = require('child_process').spawn(netmdcliPath, [action, trackNo])
+        netmdcli.on('close', (code) => {
+          console.log(`child process exited with code ${code}`)
           resolve()
         })
         netmdcli.on('error', (error) => {

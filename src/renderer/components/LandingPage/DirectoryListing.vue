@@ -226,45 +226,16 @@ export default {
         // TODO: maybe some automated cleanup?
         this.processing = i + 1
         var fileName = this.selected[i].fileName
-        let tempDir = 'pmd-temp/'
+        // Check or Create temp directory
         try {
           this.ensureDirSync(this.dir + 'pmd-temp')
           console.log('Directory created')
         } catch (err) {
           console.error(err)
         }
-        var filePath = this.dir + fileName
-        console.log(filePath)
-        var sourceFile = filePath
-        let fileExtension = '.' + sourceFile.split('.').pop()
-        var destFile = this.dir + tempDir + fileName.replace(fileExtension, '.raw.wav')
-        var atracFile = this.dir + tempDir + fileName.replace(fileExtension, '.at3')
-        var finalFile = this.dir + tempDir + this.selected[i].title + ' - ' + this.selected[i].artist + '.wav' // filepath.replace('.mp3', '.wav')
-        let self = this
-        // If sending in SP mode
-        // Convert to Wav and send to NetMD Device
-        // The encoding process is handled by the NetMD device
-        console.log('Starting conversion in <' + this.conversionMode + '> mode')
-        if (this.conversionMode === 'SP') {
-          await self.convertToWav(sourceFile, finalFile)
-            .then(await function () {
-              return self.sendToPlayer(finalFile)
-            })
-        // uploading as LP2
-        // This uses an experimental ATRAC3 encoder
-        // The files are converted into ATRAC locally, and then sent to the NetMD device
-        } else {
-          await self.convertToWav(sourceFile, destFile, fileExtension)
-            .then(await function () {
-              return self.convertToAtrac(destFile, atracFile)
-            })
-            .then(await function () {
-              return self.convertToWavWrapper(atracFile, finalFile)
-            })
-            .then(await function () {
-              return self.sendToPlayer(finalFile)
-            })
-        }
+        // Conver to desired format
+        let finalFile = await this.convert(fileName, this.selected[i])
+        await this.sendToPlayer(finalFile)
       }
       bus.$emit('netmd-status', { eventType: 'transfer-completed' })
     },
@@ -272,9 +243,42 @@ export default {
       * Convert input MP3 to WAV file using ffmpeg
       * This MUST be 44100 and 16bit for the atrac encoder to work
       */
-    convertToWav: function (source, dest, conversionMode) {
+    convert: async function (fileName, selectedFile) {
+      return new Promise(async (resolve, reject) => {
+        const tempDir = 'pmd-temp/'
+        var filePath = this.dir + fileName
+        console.log(filePath)
+        var sourceFile = filePath
+        let fileExtension = '.' + sourceFile.split('.').pop()
+        var destFile = this.dir + tempDir + fileName.replace(fileExtension, '.raw.wav')
+        var atracFile = this.dir + tempDir + fileName.replace(fileExtension, '.at3')
+        var finalFile = this.dir + tempDir + selectedFile.title + ' - ' + selectedFile.artist + '.wav' // filepath.replace('.mp3', '.wav')
+        let self = this
+        // If sending in SP mode
+        // Convert to Wav and send to NetMD Device
+        // The encoding process is handled by the NetMD device
+        console.log('Starting conversion in <' + this.conversionMode + '> mode')
+        if (this.conversionMode === 'SP') {
+          await self.convertToWav(sourceFile, destFile, fileExtension)
+          await self.sendToPlayer(finalFile)
+        // uploading as LP2
+        // This uses an experimental ATRAC3 encoder
+        // The files are converted into ATRAC locally, and then sent to the NetMD device
+        } else {
+          await self.convertToWav(sourceFile, destFile, fileExtension)
+          await self.convertToAtrac(destFile, atracFile)
+          await self.convertToWavWrapper(atracFile, finalFile)
+          resolve(finalFile)
+        }
+      })
+    },
+    /**
+      * Convert input MP3 to WAV file using ffmpeg
+      * This MUST be 44100 and 16bit for the atrac encoder to work
+      */
+    convertToWav: async function (source, dest, conversionMode) {
       this.progress = 'Converting to Wav'
-      return new Promise((resolve, reject) => {
+      return new Promise(async (resolve, reject) => {
         // check the filetype, and choose the output
         let convertTo = 'pcm_u8'
         if (this.conversionMode === 'SP') {
@@ -306,12 +310,13 @@ export default {
       * Pass WAV file to atracdenc
       * TODO: this is the longest part of the process, some user progress % feedback would be nice...
       */
-    convertToAtrac: function (source, dest) {
+    convertToAtrac: async function (source, dest) {
       this.progress = 'Converting to Atrac'
-      return new Promise((resolve, reject) => {
-        if (fs.existsSync(dest)) {
-          resolve()
-        }
+      console.log('Converting to atrac')
+      return new Promise(async (resolve, reject) => {
+        // if (fs.existsSync(dest)spawnSync) {
+        //   resolve()
+        // }
         // spawn this task and resolve promise on close
         let atracdenc = require('child_process').spawn(atracdencPath, ['-e', 'atrac3', '-i', source, '-o', dest, '--bitrate', this.bitrate])
         console.log(atracdenc)
@@ -327,7 +332,12 @@ export default {
         })
         // we get a fair bit of useful progress data returned here for debugging
         atracdenc.stdout.on('data', data => {
+          /* if (data.toString() === 'Done') {
+            resolve()
+          } */
+          var output = data.toString()
           console.log(data.toString())
+          this.progress = 'Converting to Atrac ' + output.substr(3, 3)
         })
       })
     },
@@ -335,9 +345,9 @@ export default {
       * Apply the WAV wrapper around the converted file
       * This is required to be able to send using netmdcli
       */
-    convertToWavWrapper: function (source, dest) {
+    convertToWavWrapper: async function (source, dest) {
       this.progress = 'Adding Wav Wrapper'
-      return new Promise((resolve, reject) => {
+      return new Promise(async (resolve, reject) => {
         ffmpeg(source)
           .output(dest)
           .on('progress', function (progress) {
@@ -372,12 +382,12 @@ export default {
           break
         } catch (err) {
           console.log('Attempt to send file failed, retrying...')
-          await new Promise((resolve, reject) => setTimeout(resolve, 2000))
+          await new Promise(async (resolve, reject) => setTimeout(resolve, 2000))
         }
       }
     },
-    sendCommand: function (file) {
-      return new Promise((resolve, reject) => {
+    sendCommand: async function (file) {
+      return new Promise(async (resolve, reject) => {
         let netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file])
         netmdcli.on('close', (code) => {
           if (code === 0) {

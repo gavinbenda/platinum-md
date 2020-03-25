@@ -10,17 +10,14 @@
       <b-button variant="outline-primary" @click="showDebugConsole">Debug Window</b-button>
     </b-modal>
     
-    <b-container fluid class="px-3">
+    <b-container fluid>
       <b-row>
-        <b-col class="p-3">
-          <img id="logo" src="~@/assets/logo.svg" alt="Platinum MD">
-        </b-col>
-        <b-col class="p-3 text-right">
-          <b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button>
-        </b-col>
+        <b-col cols="6"><img id="logo" src="~@/assets/logo.svg" alt="Platinum MD" class="p-3"></b-col>
+        <b-col class="text-center"><control-bar></control-bar></b-col>
+        <b-col class="text-right p-3"><b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button></b-col>
       </b-row>
     </b-container>
-
+    
     <b-container fluid class="p-3">
       <b-row>
         <b-col class="white-bg full-height mx-3 p-0 overflow-auto">
@@ -38,12 +35,13 @@
   import bus from '@/bus'
   import DirectoryListing from './LandingPage/DirectoryListing'
   import NetMdListing from './LandingPage/NetMdListing'
+  import ControlBar from './LandingPage/ControlBar'
   const { remote } = require('electron')
   const Store = require('electron-store')
   const store = new Store()
   export default {
     name: 'landing-page',
-    components: { DirectoryListing, NetMdListing },
+    components: { DirectoryListing, NetMdListing, ControlBar },
     data () {
       return {
         conversionMode: 'SP'
