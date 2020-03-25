@@ -74,8 +74,14 @@
       <template v-slot:overlay>
                 
         <div class="text-center">
+          <div v-if="communicating">
+            <b-spinner varient="success" label="Spinner" variant="success"></b-spinner>
+            <p id="cancel-label" class="mt-2">Negotiating with device...</p>
+          </div>
+          <div v-else>
           <font-awesome-icon icon="headphones" size="5x"></font-awesome-icon>
-          <p id="cancel-label" class="mt-2">Device not detected.<br />Please connect/reconnect device to continue.</p>
+            <p id="cancel-label" class="mt-2">Device not detected.<br />Please connect/reconnect device to continue.</p>
+          </div>
           <b-button
             ref="cancel"
             variant="outline-success"
@@ -96,6 +102,7 @@
 <script>
 import bus from '@/bus'
 import { netmdcliPath } from '@/binaries'
+const usbDetect = require('usb-detection')
 export default {
   data () {
     return {
@@ -114,7 +121,8 @@ export default {
       renameTrackId: 0,
       oldTrackPosition: 0,
       newTrackPosition: 0,
-      showOverlay: true
+      showOverlay: true,
+      communicating: false
     }
   },
   mounted () {
@@ -138,6 +146,27 @@ export default {
     bus.$on('track-action', (data) => {
       this.runAction(data.action, data.trackNo)
     })
+    this.readNetMd()
+    // USB auto-detection
+    usbDetect.startMonitoring()
+    usbDetect.on('add', async (device) => {
+      // Device is not always immediately ready, retry until ready
+      // This is not ideal.
+      this.communicating = true
+      let retries = 10
+      for (let i = 0, len = retries; i < len; i++) {
+        try {
+          await this.readNetMd()
+          break
+        } catch (err) {
+          console.log(err)
+          await new Promise(async (resolve, reject) => setTimeout(resolve, 1500))
+        }
+      }
+      this.communicating = false
+    })
+    usbDetect.on('remove', (device) => { this.readNetMd() })
+    usbDetect.on('change', (device) => { this.readNetMd() })
   },
   methods: {
     /**
@@ -150,12 +179,12 @@ export default {
       this.tracks = []
       return new Promise((resolve, reject) => {
         let netmdcli = require('child_process').spawn(netmdcliPath, ['-v'])
-        netmdcli.on('close', (code) => {
+        /* netmdcli.on('close', (code) => {
           if (code === 0) {
             console.log('netmdcli returned Success code ' + code)
             resolve()
           }
-        })
+        }) */
         netmdcli.on('error', (error) => {
           console.log(`child process creating error with error ${error}`)
           reject(error)
@@ -172,8 +201,17 @@ export default {
               return jsonData.tracks[key]
             })
             this.tracks = results
-            // Getting a response was successful, notify
-            bus.$emit('netmd-status', { eventType: 'ready' })
+            // This is an awful check, that I hate.
+            // Ensure 'sane' data comes back before resolving
+            if ((this.info.recordedTime !== '00:00:00.00' && this.tracks.length === 0) || (this.info.recordedTime === '00:00:00.00' && this.info.availableTime === '00:00:00.00')) {
+              let errorMessage = { message: 'Device not ready, recordedTime: ' + this.info.recordedTime + ' availableTime: ' + this.info.availableTime + ' Tracks: ' + this.tracks.length }
+              reject(errorMessage)
+            } else {
+              // Getting a response was successful, resolve and notify
+              bus.$emit('netmd-status', { eventType: 'ready' })
+              this.communicating = false
+              resolve()
+            }
           }
         })
       })
