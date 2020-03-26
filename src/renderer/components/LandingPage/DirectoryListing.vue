@@ -30,13 +30,15 @@
     
     <b-container class="toolbar py-2 m-0">
       <b-row align-v="center">
+        <b-col cols="1">
+          <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
+        </b-col>
         <b-col>
           <b>{{ selected.length }}</b> tracks selected {{ conversionMode }}<br />
           <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
         </b-col>
         <b-col class="text-right">
           <b-button variant="primary" @click="chooseDir" :disabled="isBusy">Folder <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
-          <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
           <b-button variant="success" @click="upload" :disabled="isBusy">Transfer <font-awesome-icon icon="angle-double-right"></font-awesome-icon></b-button>
         </b-col>
       </b-row>
@@ -86,13 +88,17 @@
 import bus from '@/bus'
 import { atracdencPath, netmdcliPath } from '@/binaries'
 import clone from 'lodash/clone'
+import os from 'os'
+import path from 'path'
 const fs = require('fs-extra')
 const del = require('del')
 const readChunk = require('read-chunk')
 const fileType = require('file-type')
 const mm = require('music-metadata')
 const { remote } = require('electron')
+const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path.replace('app.asar', 'app.asar.unpacked')
 const ffmpeg = require('fluent-ffmpeg')
+ffmpeg.setFfmpegPath(ffmpegPath)
 const Store = require('electron-store')
 const store = new Store()
 export default {
@@ -119,7 +125,8 @@ export default {
       selectedTrack: {
         trackNo: 0
       },
-      selectedTrackSource: {}
+      selectedTrackSource: {},
+      tempDirectory: 'pmd-temp'
     }
   },
   created () {
@@ -147,7 +154,7 @@ export default {
       }, names => {
         if (names != null) {
           console.log('selected directory:' + names[0])
-          store.set('baseDirectory', names[0] + '/')
+          store.set('baseDirectory', names[0] + path.sep)
           this.dir = store.get('baseDirectory')
           this.readDirectory()
         }
@@ -183,13 +190,22 @@ export default {
                     let title = (metadata.common.title !== undefined) ? metadata.common.title : 'Untitled'
                     let album = (metadata.common.album !== undefined) ? metadata.common.album : '-'
                     let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
-                    let codec = (metadata.format.codec !== undefined) ? metadata.format.codec : ''
+                    let codec = (metadata.format.codec !== undefined) ? metadata.format.codec.replace('MPEG 1 Layer 3', 'MP3') : ''
                     let trackNo = (metadata.common.track.no !== undefined) ? metadata.common.track.no : ''
+                    // filter forbidden filesystem characters
+                    // Windows list from: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+                    if (os.platform() === 'win32') {
+                      artist = (artist !== null) ? artist.substring(0, 50).replace(/[<>:"/\\|?*]/g, '_') : ''
+                      title = (title !== null) ? title.substring(0, 50).replace(/[<>:"/\\|?*]/g, '_') : ''
+                    } else {
+                      artist = (artist !== null) ? artist.substring(0, 50).replace('/', '_') : ''
+                      title = (title !== null) ? title.substring(0, 50).replace('/', '_') : ''
+                    }
                     // write the relevent data to the files array
                     this.files.push({
                       fileName: filePath,
-                      artist: (artist !== null) ? artist.substring(0, 50).replace('/', '_') : '',
-                      title: (title !== null) ? title.substring(0, 50).replace('/', '_') : '',
+                      artist,
+                      title,
                       album: (album !== null) ? album : '',
                       trackNo: (trackNo !== null) ? trackNo : 0,
                       format: fileTypeInfo.ext,
@@ -230,7 +246,7 @@ export default {
         var fileName = this.selected[i].fileName
         // Check or Create temp directory
         try {
-          this.ensureDirSync(this.dir + 'pmd-temp')
+          this.ensureDirSync(this.dir + this.tempDirectory)
           console.log('Directory created')
         } catch (err) {
           console.error(err)
@@ -242,7 +258,7 @@ export default {
         bus.$emit('netmd-status', { eventType: 'transfer-completed' })
       }
       // Clean up
-      const deletedPaths = await del.sync([this.dir + 'pmd-temp'], {force: true})
+      const deletedPaths = await del.sync([this.dir + this.tempDirectory], {force: true})
       console.log('Deleting:\n', deletedPaths.join('\n'))
     },
     /**
@@ -251,19 +267,18 @@ export default {
       */
     convert: async function (fileName, selectedFile) {
       return new Promise(async (resolve, reject) => {
-        const tempDir = 'pmd-temp/'
         var filePath = this.dir + fileName
         console.log(filePath)
         var sourceFile = filePath
         let fileExtension = '.' + sourceFile.split('.').pop()
-        var destFile = this.dir + tempDir + fileName.replace(fileExtension, '.raw.wav')
-        var atracFile = this.dir + tempDir + fileName.replace(fileExtension, '.at3')
-        var finalFile = this.dir + tempDir + selectedFile.title + ' - ' + selectedFile.artist + '.wav' // filepath.replace('.mp3', '.wav')
+        var destFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.raw.wav')
+        var atracFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.at3')
+        var finalFile = this.dir + this.tempDirectory + path.sep + selectedFile.title + ' - ' + selectedFile.artist + '.wav'
         let self = this
         // If sending in SP mode
         // Convert to Wav and send to NetMD Device
         // The encoding process is handled by the NetMD device
-        console.log('Starting conversion in <' + this.conversionMode + '> mode', 'color:blue')
+        console.log('Starting conversion in <' + this.conversionMode + '> mode')
         if (this.conversionMode === 'SP') {
           await self.convertToWav(sourceFile, finalFile, fileExtension)
         // uploading as LP2
@@ -286,8 +301,16 @@ export default {
       return new Promise(async (resolve, reject) => {
         // check the filetype, and choose the output
         let convertTo = 'pcm_u8'
-        if (this.conversionMode === 'SP') {
-          convertTo = 'pcm_s16le'
+        switch (this.conversionMode) {
+          case 'SP':
+            convertTo = 'pcm_s16le'
+            break
+          case 'LP2':
+            this.bitrate = 128
+            break
+          case 'LP4':
+            this.bitrate = 64
+            break
         }
         // Start conversion
         console.log('Starting WAV conversion process using ffmpeg: ' + source + ' --> ' + dest)
@@ -319,9 +342,6 @@ export default {
       this.progress = 'Converting to Atrac'
       console.log('Converting to atrac')
       return new Promise(async (resolve, reject) => {
-        // if (fs.existsSync(dest)spawnSync) {
-        //   resolve()
-        // }
         // spawn this task and resolve promise on close
         let atracdenc = require('child_process').spawn(atracdencPath, ['-e', 'atrac3', '-i', source, '-o', dest, '--bitrate', this.bitrate])
         console.log(atracdenc)
@@ -337,9 +357,6 @@ export default {
         })
         // we get a fair bit of useful progress data returned here for debugging
         atracdenc.stdout.on('data', data => {
-          /* if (data.toString() === 'Done') {
-            resolve()
-          } */
           var output = data.toString()
           console.log(data.toString())
           this.progress = 'Converting to Atrac ' + output.substr(3, 3)
@@ -355,6 +372,7 @@ export default {
       return new Promise(async (resolve, reject) => {
         ffmpeg(source)
           .output(dest)
+          .audioCodec('copy')
           .on('progress', function (progress) {
             console.log('Processing: ' + progress.timemark + ' done ' + progress.targetSize + ' kilobytes')
           })

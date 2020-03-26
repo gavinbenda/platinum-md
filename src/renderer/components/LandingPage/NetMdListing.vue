@@ -16,14 +16,21 @@
     <b-overlay :show="showOverlay" rounded="md" class="full-height">
       <b-container class="toolbar py-2">
         <b-row align-v="center">
+          <b-col cols="1">
+            <b-button variant="outline-light" @click="readNetMd" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
+          </b-col>
           <b-col>
             <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
             <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }}</a></b-badge> 
             <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
           </b-col>
           <b-col class="text-right">
-            <b-button variant="outline-light" @click="readNetMd" :disabled="isBusy">Rescan <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
-            <b-button variant="danger" @click="deleteTracks" :disabled="isBusy">Delete <font-awesome-icon icon="times"></font-awesome-icon></b-button>
+            <b-button variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
+            <b-dropdown class="danger my-0 py-0">
+                <b-dropdown-item>
+                  <b-button variant="danger" @click="eraseDisc" :disabled="isBusy" block>Erase Disc <font-awesome-icon icon="times"></font-awesome-icon></b-button>
+                </b-dropdown-item>
+            </b-dropdown>
           </b-col>
         </b-row>
       </b-container>
@@ -223,32 +230,38 @@ export default {
       this.selected = items
     },
     /**
-      * Delete selected tracks
-      * This is async so it happens in order and awaits each delete action to finish
+      * Erase All
+      * This deletes all tracks, I'd prefer this to do a proper "erase" command later.
       */
-    deleteTracks: async function () {
-      // loop through each selected track one-by-one
-      for (var i = 0, len = this.selected.length; i < len; i++) {
-        var trackNo = parseInt(this.selected[i].no, 10)
-        console.log('deleting: ' + trackNo)
-        let self = this
-        await self.deleteTrack(trackNo)
+    eraseDisc: async function () {
+      let self = this
+      await this.deleteTrack(0, this.tracks.length)
+        .then(await function () {
+          self.readNetMd()
+        })
+    },
+    /**
+      * Delete a selected track
+      * This will allow to select a range of tracks in the future
+      */
+    deleteSelectedTracks: async function () {
+      let self = this
+      if (this.selected[0] !== undefined) {
+        let trackNo = this.selected[0].no
+        console.log('Would have deleted: ' + trackNo)
+        await this.deleteTrack(trackNo, trackNo)
           .then(await function () {
-            console.log(i + ': deleted' + trackNo)
-            // this feels a bit dirty, but works?
-            if ((i + 1) === self.selected.length) {
-              self.readNetMd()
-            }
+            self.readNetMd()
           })
       }
     },
     /**
       * Delete track using netmdcli
       */
-    deleteTrack: function (trackNo) {
+    deleteTrack: async function (trackFrom, trackTo) {
       // this.progress = 'Deleting Track: ' + trackNo
       return new Promise((resolve, reject) => {
-        let netmdcli = require('child_process').spawn(netmdcliPath, ['delete', trackNo])
+        let netmdcli = require('child_process').spawn(netmdcliPath, ['delete', trackFrom, trackTo])
         netmdcli.on('close', (code) => {
           console.log(`child process exited with code ${code}`)
           resolve()

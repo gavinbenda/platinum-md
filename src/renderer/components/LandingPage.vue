@@ -4,7 +4,8 @@
     <b-modal @ok="saveSettings" ref="settings-modal" title="Settings">
       <b-form-group label="Transfer Mode:">
         <b-form-radio v-model="conversionMode" name="mode-sp" value="SP">SP (Best quality)</b-form-radio>
-        <b-form-radio v-model="conversionMode" name="mode-lp2" value="LP2">LP2 (Fit more tracks)</b-form-radio>
+        <b-form-radio v-model="conversionMode" name="mode-lp2" value="LP2">LP2 (Acceptable Quality)</b-form-radio>
+        <b-form-radio v-model="conversionMode" name="mode-lp4" value="LP4">LP4 (Lower Quality)</b-form-radio>
       </b-form-group>
       <b-alert variant="success" show><b>Please note:</b> LP2 is implemented using an experimental encoder.<br />LP4 is currently not possible.</b-alert>
       <b-button variant="outline-primary" @click="showDebugConsole">Debug Window</b-button>
@@ -47,6 +48,9 @@
         conversionMode: 'SP'
       }
     },
+    created () {
+      this.readConfig()
+    },
     methods: {
       /**
         * Rename track modal
@@ -60,6 +64,14 @@
       saveSettings: function () {
         store.set('conversionMode', this.conversionMode)
         bus.$emit('config-update')
+      },
+      /**
+        * Read-in config file
+        */
+      readConfig: function () {
+        if (store.has('conversionMode')) {
+          this.conversionMode = store.get('conversionMode')
+        }
       },
       /**
         * Show debug console
