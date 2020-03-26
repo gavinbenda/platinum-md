@@ -301,11 +301,8 @@ export default {
       this.progress = 'Converting to Wav'
       return new Promise(async (resolve, reject) => {
         // check the filetype, and choose the output
-        let convertTo = 'pcm_u8'
+        let convertTo = 'pcm_s16le'
         switch (this.conversionMode) {
-          case 'SP':
-            convertTo = 'pcm_s16le'
-            break
           case 'LP2':
             this.bitrate = 128
             break
