@@ -253,8 +253,9 @@ export default {
         }
         // Convert to desired format
         let finalFile = await this.convert(fileName, this.selected[i])
+        let trackTitle = this.selected[i].title + ' - ' + this.selected[i].artist
         console.log('Conversion Complete.')
-        await this.sendToPlayer(finalFile)
+        await this.sendToPlayer(finalFile, trackTitle)
         bus.$emit('netmd-status', { eventType: 'transfer-completed' })
       }
       // Clean up
@@ -344,7 +345,7 @@ export default {
       return new Promise(async (resolve, reject) => {
         // spawn this task and resolve promise on close
         let atracdenc = require('child_process').spawn(atracdencPath, ['-e', 'atrac3', '-i', source, '-o', dest, '--bitrate', this.bitrate])
-        console.log(atracdenc)
+        // console.log(atracdenc)
         atracdenc.on('close', (code) => {
           if (code === 0) {
             console.log('atracdenc returned Success code ' + code)
@@ -393,7 +394,7 @@ export default {
       * Send final file using netmdcli
       * The filename is named {title} - {artist}
       */
-    sendToPlayer: async function (file) {
+    sendToPlayer: async function (file, trackTitle) {
       this.progress = 'Sending to Player'
       console.log('Attempting to send to NetMD device')
       // send off command, we wrap this so it can be retryed
@@ -401,7 +402,7 @@ export default {
       let retries = 5
       for (let i = 0, len = retries; i < len; i++) {
         try {
-          await this.sendCommand(file)
+          await this.sendCommand(file, trackTitle)
           break
         } catch (err) {
           console.log('Attempt to send file failed, retrying...')
@@ -409,9 +410,9 @@ export default {
         }
       }
     },
-    sendCommand: async function (file) {
+    sendCommand: async function (file, trackTitle) {
       return new Promise(async (resolve, reject) => {
-        let netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file])
+        let netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file, trackTitle])
         netmdcli.on('close', (code) => {
           if (code === 0) {
             console.log('netmdcli send returned Success code ' + code)
