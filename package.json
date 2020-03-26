@@ -49,34 +49,31 @@
     },
     "mac": {
       "icon": "build/icons/icon.icns",
-      "files": [
-        "!node_modules/ffmpeg-static/bin/win${/*}",
-        "!node_modules/ffmpeg-static/bin/linux${/*}"
+      "extraFiles": [
+        {
+          "from": "resources/mac/bin",
+          "to": "Resources/bin",
+          "filter": [
+            "**/*"
+          ]
+        }
       ]
     },
     "win": {
       "icon": "build/icons/icon.ico",
-      "files": [
-        "!node_modules/ffmpeg-static/bin/mac${/*}",
-        "!node_modules/ffmpeg-static/bin/linux${/*}"
+      "extraFiles": [
+        {
+          "from": "resources/win/bin",
+          "to": "Resources/bin",
+          "filter": [
+            "**/*"
+          ]
+        }
       ]
     },
     "linux": {
-      "icon": "build/icons",
-      "files": [
-        "!node_modules/ffmpeg-static/bin/mac${/*}",
-        "!node_modules/ffmpeg-static/bin/win${/*}"
-      ]
-    },
-    "extraFiles": [
-      {
-        "from": "resources/mac/bin",
-        "to": "Resources/bin",
-        "filter": [
-          "**/*"
-        ]
-      }
-    ]
+      "icon": "build/icons"
+    }
   },
   "dependencies": {
     "@ffmpeg-installer/ffmpeg": "^1.0.20",
