@@ -6,9 +6,7 @@
 
 #### Dependancies
 
-This is quite tricky, as there are a few extras needed.
-
-Future releases will try and include a statically built binary for each included tool.
+##### OSX
 
 You will need to install homebrew: https://docs.brew.sh/Installation
 
@@ -18,7 +16,17 @@ Then install the following:
 
 `brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg && brew link --force qt5`
 
+##### Windows
+
+You will need to use Zadig to install the WinUSB Driver.
+Connect your NetMD device, open the app and click the "Install Driver" button.
+Please note, this will disable Sonic Stage from having access to the device, you'll need to run Zadig and 'reinstall' the old driver to use it again.
+
+https://zadig.akeo.ie/
+
 #### Installation
+
+##### OSX
 
 Download the [latest release](https://github.com/gavinbenda/platinum-md/releases), and open the dmg.
 
@@ -27,6 +35,12 @@ Drag the file to the applications folder.
 Upon opening the `platinum-md` app from the applications folder, it will show a warning.
 
 Open OSX `Settings` and click `Security & Privacy` - click the `Open Anyway` button shown near the bottom of the panel.
+
+##### Windows
+
+Download the [latest release](https://github.com/gavinbenda/platinum-md/releases), and open the platinum-md .exe Setup file.
+
+Run the installer, don't forget to run Zadig above.
 
 ## Overview
 
