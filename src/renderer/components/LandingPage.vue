@@ -7,7 +7,7 @@
         <b-form-radio v-model="conversionMode" name="mode-lp2" value="LP2">LP2 (Acceptable Quality)</b-form-radio>
         <b-form-radio v-model="conversionMode" name="mode-lp4" value="LP4">LP4 (Lower Quality)</b-form-radio>
       </b-form-group>
-      <b-alert variant="success" show><b>Please note:</b> LP2 is implemented using an experimental encoder.<br />LP4 is currently not possible.</b-alert>
+      <b-alert variant="success" show><b>Please note:</b> LP2/LP4 is implemented using an experimental encoder.</b-alert>
       <b-button variant="outline-primary" @click="showDebugConsole">Debug Window</b-button>
     </b-modal>
     
