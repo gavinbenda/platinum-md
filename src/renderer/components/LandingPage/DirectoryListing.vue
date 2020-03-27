@@ -301,7 +301,6 @@ export default {
       this.progress = 'Converting to Wav'
       return new Promise(async (resolve, reject) => {
         // check the filetype, and choose the output
-        let convertTo = 'pcm_s16le'
         switch (this.conversionMode) {
           case 'LP2':
             this.bitrate = 128
@@ -313,9 +312,12 @@ export default {
         // Start conversion
         console.log('Starting WAV conversion process using ffmpeg: ' + source + ' --> ' + dest)
         ffmpeg(source)
-          .audioCodec(convertTo)
           .output(dest)
+          .outputOption(['-acodec', 'pcm_s16le'])
           .audioFrequency(44100)
+          .on('start', function (commandLine) {
+            console.log('Spawned Ffmpeg with command: ', commandLine)
+          })
           .on('progress', function (progress) {
             console.log('Processing: ' + progress.timemark + ' done ' + progress.targetSize + ' kilobytes')
           })
