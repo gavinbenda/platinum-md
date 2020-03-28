@@ -77,17 +77,15 @@ This is a very alpha release, expect bugs.
 ## Known bugs / future Plans
 
 * Some pre-recorded discs made with SonicStage may show as blank
-* Best to start with a completely blank disc
-* Bulk delete is not supported yet, but will be soon
+* ~~Bulk delete is not supported yet, but will be soon~~
 * ~~Moving tracks is also not supported, but also will be very soon~~
-* Sometimes a track or two may be missed, this is likely a race-condtion, will be fixed in the next release
+* ~~Sometimes a track or two may be missed, this is likely a race-condtion, will be fixed in the next release~~
 * Automatic CLI tools for installing dependancies is highly desirable
-* Linux release is imminent, starting with Ubuntu
-* Windows release is a way off, sorry
+* ~~Linux release is imminent, starting with Ubuntu~~
+* ~~Windows release is a way off, sorry~~
 * The USB interface sometimes just fails, this is hard to fix as it seems to be the device itself (just unplug/plug-in again)
-* LP4 is unsupported (relies on support from a 3rd party library)
-* LP2 is experimental, but works fairly well
-* SP is full-quality PCM and is encoded by the NetMD device itself for best quality
+* ~~LP4 is unsupported (relies on support from a 3rd party library)~~
+* LP2 is experimental, in my experience some tracks may have a slight hiss... this is an upstream issue.
 
 ## Thanks
 
