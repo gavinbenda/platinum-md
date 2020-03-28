@@ -23,7 +23,7 @@ function createWindow () {
     height: 850,
     useContentSize: true,
     width: 1400,
-    icon: __static + '/icons/256x256.png',
+    icon: __static + '/icons/256x256.png'
   })
   mainWindow.loadURL(winURL)
   // Open dev tools initially when in development mode
