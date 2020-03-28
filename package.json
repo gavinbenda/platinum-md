@@ -72,7 +72,7 @@
       ]
     },
     "linux": {
-      "icon": "build/icons/256x256.png",
+      "icon": "build/icons/",
       "extraFiles": [
         {
           "from": "resources/linux/bin",
