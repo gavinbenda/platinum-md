@@ -72,7 +72,16 @@
       ]
     },
     "linux": {
-      "icon": "build/icons"
+      "icon": "build/icons/256x256.png",
+      "extraFiles": [
+        {
+          "from": "resources/linux/bin",
+          "to": "Resources/bin",
+          "filter": [
+            "**/*"
+          ]
+        }
+      ]
     }
   },
   "dependencies": {
