@@ -24,6 +24,16 @@ Please note, this will disable Sonic Stage from having access to the device, you
 
 https://zadig.akeo.ie/
 
+##### Linux
+
+Note: This has only been tested on Ubuntu.
+
+Run `apt-get install libgcrypt20-dev libglib2.0-dev libusb-1.0-0-dev qt4-qmake libid3tag0-dev libmad0-dev`
+
+You will also likely need to allow your user permissions to the USB/NetMD Device.
+This is a 'catch-all' but you may wish to add a specific deviceId/vendorId if you want to lock permissions down.
+`sudo nano /etc/udev/rules.d/50-device.rules` and add `SUBSYSTEM=="usb", GROUP="YOURUSERGROUPHERE"`
+
 #### Installation
 
 ##### OSX
@@ -41,6 +51,11 @@ Open OSX `Settings` and click `Security & Privacy` - click the `Open Anyway` but
 Download the [latest release](https://github.com/gavinbenda/platinum-md/releases), and open the platinum-md .exe Setup file.
 
 Run the installer, don't forget to run Zadig above.
+
+##### Linux
+
+Download the [latest release](https://github.com/gavinbenda/platinum-md/releases), and open the platinum-md AppImage Setup file.
+
 
 ## Overview
 
