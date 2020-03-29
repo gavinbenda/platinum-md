@@ -38,7 +38,7 @@ This is a 'catch-all' but you may wish to add a specific deviceId/vendorId if yo
 
 ##### OSX
 
-Download the [latest release](https://github.com/gavinbenda/platinum-md/releases), and open the dmg.
+Download the [latest release](https://github.com/gavinbenda/platinum-md/releases/download/v0.7.0-alpha/platinum-md-0.7.0.dmg), and open the dmg.
 
 Drag the file to the applications folder.
 
@@ -48,13 +48,13 @@ Open OSX `Settings` and click `Security & Privacy` - click the `Open Anyway` but
 
 ##### Windows
 
-Download the [latest release](https://github.com/gavinbenda/platinum-md/releases), and open the platinum-md .exe Setup file.
+Download the [latest release](https://github.com/gavinbenda/platinum-md/releases/download/v0.7.0-alpha/platinum-md.Setup.0.7.0.exe), and open the platinum-md .exe Setup file.
 
 Run the installer, don't forget to run Zadig above.
 
 ##### Linux
 
-Download the [latest release](https://github.com/gavinbenda/platinum-md/releases), and open the platinum-md AppImage Setup file.
+Download the [latest release](https://github.com/gavinbenda/platinum-md/releases/download/v0.7.0-alpha/platinum-md-0.7.0.AppImage), and open the platinum-md AppImage Setup file.
 
 
 ## Overview
@@ -67,12 +67,19 @@ Supports upload MP3/WAV/FLAC files direct to a compatible NetMD recorder.
 
 Full quality SP recording.
 
-LP2 with an experimental encoder
+LP2/LP4 with an experimental encoder
 
 
 ## Release Notes
 
 This is a very alpha release, expect bugs.
+
+## FAQ / Troubleshooting
+
+* If the interface shows "Negotiating with device" but won't connect, click the `retry` button.
+* To access debug information, click `settings` and click the `debug window` button.
+* Some discs origionally made with SonicStage may not allow for tracks to be deleted by Platinum-MD.
+* Windows anti-virus software may sometimes incorrectly mark the app as a positive.
 
 ## Known bugs / future Plans
 
