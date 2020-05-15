@@ -187,7 +187,7 @@ export default {
                     // console.log(metadata)
                     // Get data for file object
                     let artist = (metadata.common.artist !== undefined) ? metadata.common.artist : 'No Artist'
-                    let title = (metadata.common.title !== undefined) ? metadata.common.title : 'Untitled'
+                    let title = (metadata.common.title !== undefined) ? metadata.common.title : filePath
                     let album = (metadata.common.album !== undefined) ? metadata.common.album : '-'
                     let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
                     let codec = (metadata.format.codec !== undefined) ? metadata.format.codec.replace('MPEG 1 Layer 3', 'MP3') : ''
