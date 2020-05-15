@@ -162,8 +162,7 @@ export default {
     },
     /**
       * Reads the selected directory and displays all compatable files
-      * At this stage it's simply MP3's that contain metadata
-      * TODO: this can support direct WAV and FLAC input quite easily...
+      * At this stage it's simply any file that contain valid metadata
       * TODO: there should be more promises used here
       */
     readDirectory: function () {
@@ -178,45 +177,42 @@ export default {
           if (fs.statSync(this.dir + filePath).isFile()) {
             let buffer = readChunk.sync(this.dir + filePath, 0, fileType.minimumBytes)
             let fileTypeInfo = fileType(buffer)
-            // only interestedin MP3 files at the moment, ignore all others
             if (fileTypeInfo != null) {
-              if (fileTypeInfo.ext === 'mp3' || fileTypeInfo.ext === 'wav' || fileTypeInfo.ext === 'flac') {
-                // read metadata
-                mm.parseFile(this.dir + filePath, {native: true})
-                  .then(metadata => {
-                    // console.log(metadata)
-                    // Get data for file object
-                    let artist = (metadata.common.artist !== undefined) ? metadata.common.artist : 'No Artist'
-                    let title = (metadata.common.title !== undefined) ? metadata.common.title : 'Untitled'
-                    let album = (metadata.common.album !== undefined) ? metadata.common.album : '-'
-                    let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
-                    let codec = (metadata.format.codec !== undefined) ? metadata.format.codec.replace('MPEG 1 Layer 3', 'MP3') : ''
-                    let trackNo = (metadata.common.track.no !== undefined) ? metadata.common.track.no : ''
-                    // filter forbidden filesystem characters
-                    // Windows list from: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
-                    if (os.platform() === 'win32') {
-                      artist = (artist !== null) ? artist.substring(0, 50).replace(/[<>:"/\\|?*]/g, '_') : ''
-                      title = (title !== null) ? title.substring(0, 50).replace(/[<>:"/\\|?*]/g, '_') : ''
-                    } else {
-                      artist = (artist !== null) ? artist.substring(0, 50).replace('/', '_') : ''
-                      title = (title !== null) ? title.substring(0, 50).replace('/', '_') : ''
-                    }
-                    // write the relevent data to the files array
-                    this.files.push({
-                      fileName: filePath,
-                      artist,
-                      title,
-                      album: (album !== null) ? album : '',
-                      trackNo: (trackNo !== null) ? trackNo : 0,
-                      format: fileTypeInfo.ext,
-                      bitrate: (bitrate !== null) ? Math.round(bitrate / 1000) + 'kbps' : '-',
-                      codec: (codec !== null) ? codec : ''
-                    })
+              // read metadata
+              mm.parseFile(this.dir + filePath, {native: true})
+                .then(metadata => {
+                  // console.log(metadata)
+                  // Get data for file object
+                  let artist = (metadata.common.artist !== undefined) ? metadata.common.artist : 'No Artist'
+                  let title = (metadata.common.title !== undefined) ? metadata.common.title : 'Untitled'
+                  let album = (metadata.common.album !== undefined) ? metadata.common.album : '-'
+                  let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
+                  let codec = (metadata.format.codec !== undefined) ? metadata.format.codec.replace('MPEG 1 Layer 3', 'MP3') : ''
+                  let trackNo = (metadata.common.track.no !== undefined) ? metadata.common.track.no : ''
+                  // filter forbidden filesystem characters
+                  // Windows list from: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
+                  if (os.platform() === 'win32') {
+                    artist = (artist !== null) ? artist.substring(0, 50).replace(/[<>:"/\\|?*]/g, '_') : ''
+                    title = (title !== null) ? title.substring(0, 50).replace(/[<>:"/\\|?*]/g, '_') : ''
+                  } else {
+                    artist = (artist !== null) ? artist.substring(0, 50).replace('/', '_') : ''
+                    title = (title !== null) ? title.substring(0, 50).replace('/', '_') : ''
+                  }
+                  // write the relevent data to the files array
+                  this.files.push({
+                    fileName: filePath,
+                    artist,
+                    title,
+                    album: (album !== null) ? album : '',
+                    trackNo: (trackNo !== null) ? trackNo : 0,
+                    format: fileTypeInfo.ext,
+                    bitrate: (bitrate !== null) ? Math.round(bitrate / 1000) + 'kbps' : '-',
+                    codec: (codec !== null) ? codec : ''
                   })
-                  .catch(err => {
-                    console.error(err.message)
-                  })
-              }
+                })
+                .catch(err => {
+                  console.error(err.message)
+                })
             }
           }
         }
@@ -263,7 +259,7 @@ export default {
       console.log('Deleting:\n', deletedPaths.join('\n'))
     },
     /**
-      * Convert input MP3 to WAV file using ffmpeg
+      * Convert input audio file to WAV file using ffmpeg
       * This MUST be 44100 and 16bit for the atrac encoder to work
       */
     convert: async function (fileName, selectedFile) {
@@ -294,7 +290,7 @@ export default {
       })
     },
     /**
-      * Convert input MP3 to WAV file using ffmpeg
+      * Convert input audio file to WAV file using ffmpeg
       * This MUST be 44100 and 16bit for the atrac encoder to work
       */
     convertToWav: async function (source, dest, conversionMode) {
