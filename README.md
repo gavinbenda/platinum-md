@@ -94,6 +94,20 @@ This is a very alpha release, expect bugs.
 * ~~LP4 is unsupported (relies on support from a 3rd party library)~~
 * LP2 is experimental, in my experience some tracks may have a slight hiss... this is an upstream issue.
 
+## Troubleshooting
+
+Interfacing devices that are almost 20 years old will always be a little finnicky, so expect sometimes you may just have to plug it out/in again.
+
+### Stuck on "Negotiating" for more than 30 seconds
+
+* Press the retry button, feel free to press it a few times. This is often caused by a slow startup time of the device.
+* Ensure that there is a disc in the device. It must be a standard formatted disc, not Hi-MD, etc.
+* Set disc mode to "MD" - on your MD device, this is ususally under `Options` -> `Disc Mode` -> set to `MD`. This is ususally only an issue when using a blank disc.
+
+### Debugging
+
+* There may be some useful information in the Platinum-MD debug window. To access, click `Settings` and then click the `Debug Window` button.
+
 ## Thanks
 
 The Linux-Minidisc project (this is the most up-to-date Fork I've found, but there are many contributers):
