@@ -78,10 +78,12 @@ This is a very alpha release, expect bugs.
 
 * Make sure you have a disk in the device before connecting.
 * If the interface shows "Negotiating with device" but won't connect, click the `retry` button.
+* If using Windows, ensure you've correctly installed the driver using Zadig (instructions above).
 * To access debug information, click `settings` and click the `debug window` button.
 * Some discs origionally made with SonicStage may not allow for tracks to be deleted by Platinum-MD.
 * Windows anti-virus software may sometimes incorrectly mark the app as a positive.
 * If using a Hi-MD device, ensure that the device is set to `MD` mode (mainly if using a blank disc) `Option` then `Disc Mode` and select `md`.
+* Interfacing devices that are almost 20 years old will always be a little finnicky, so expect sometimes you may just have to un-plug/plug-in again.
 
 ## Known bugs / future Plans
 
@@ -95,10 +97,6 @@ This is a very alpha release, expect bugs.
 * The USB interface sometimes just fails, this is hard to fix as it seems to be the device itself (just unplug/plug-in again)
 * ~~LP4 is unsupported (relies on support from a 3rd party library)~~
 * LP2 is experimental, in my experience some tracks may have a slight hiss... this is an upstream issue.
-
-## Troubleshooting
-
-Interfacing devices that are almost 20 years old will always be a little finnicky, so expect sometimes you may just have to plug it out/in again.
 
 ### Stuck on "Negotiating" for more than 30 seconds
 
