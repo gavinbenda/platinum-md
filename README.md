@@ -76,10 +76,12 @@ This is a very alpha release, expect bugs.
 
 ## FAQ / Troubleshooting
 
+* Make sure you have a disk in the device before connecting.
 * If the interface shows "Negotiating with device" but won't connect, click the `retry` button.
 * To access debug information, click `settings` and click the `debug window` button.
 * Some discs origionally made with SonicStage may not allow for tracks to be deleted by Platinum-MD.
 * Windows anti-virus software may sometimes incorrectly mark the app as a positive.
+* If using a Hi-MD device, ensure that the device is set to `MD` mode (mainly if using a blank disc) `Option` then `Disc Mode` and select `md`.
 
 ## Known bugs / future Plans
 
