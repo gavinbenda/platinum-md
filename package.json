@@ -18,7 +18,7 @@
     "pack:renderer": "cross-env NODE_ENV=production webpack --progress --colors --config .electron-vue/webpack.renderer.config.js",
     "test": "npm run unit",
     "unit": "karma start test/unit/karma.conf.js",
-    "postinstall": "npm run lint:fix"
+    "postinstall": "npm run lint:fix && ./node_modules/.bin/electron-rebuild"
   },
   "build": {
     "productName": "platinum-md",
@@ -101,12 +101,13 @@
     "jquery": "^3.5.0",
     "music-metadata": "^6.3.7",
     "read-chunk": "^3.2.0",
-    "usb-detection": "^4.7.0",
+    "usb-detection": "^4.10.0",
     "vue": "^2.5.16",
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
-    "vuex-electron": "^1.0.0"
+    "vuex-electron": "^1.0.0",
+    "fs-extra": "^8.0.0"
   },
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.10.1",
