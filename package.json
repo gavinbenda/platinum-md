@@ -98,7 +98,7 @@
     "ffmpeg-static-electron": "^2.0.1",
     "file-type": "^12.1.0",
     "fluent-ffmpeg": "^2.1.2",
-    "jquery": "^3.4.1",
+    "jquery": "^3.5.0",
     "music-metadata": "^6.3.7",
     "read-chunk": "^3.2.0",
     "usb-detection": "^4.7.0",
