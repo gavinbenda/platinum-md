@@ -8,6 +8,11 @@
         <b-form-radio v-model="conversionMode" name="mode-lp4" value="LP4">LP4 (Lower Quality)</b-form-radio>
       </b-form-group>
       <b-alert variant="success" show><b>Please note:</b> LP2/LP4 is implemented using an experimental encoder.</b-alert>
+      <hr />
+      <b>Title Format</b>
+      <p>Options: <b-badge>%title%</b-badge> <b-badge>%artist%</b-badge> <b-badge>%trackno%</b-badge></p>
+      <b-form-input v-model="titleFormat"></b-form-input>
+      <hr />
       <b-button variant="outline-primary" @click="showDebugConsole">Debug Window</b-button>
     </b-modal>
     
@@ -45,7 +50,8 @@
     components: { DirectoryListing, NetMdListing, ControlBar },
     data () {
       return {
-        conversionMode: 'SP'
+        conversionMode: 'SP',
+        titleFormat: '%title% - %artist%'
       }
     },
     created () {
@@ -63,6 +69,7 @@
         */
       saveSettings: function () {
         store.set('conversionMode', this.conversionMode)
+        store.set('titleFormat', this.titleFormat)
         bus.$emit('config-update')
       },
       /**
@@ -71,6 +78,9 @@
       readConfig: function () {
         if (store.has('conversionMode')) {
           this.conversionMode = store.get('conversionMode')
+        }
+        if (store.has('titleFormat')) {
+          this.conversionMode = store.get('titleFormat')
         }
       },
       /**

@@ -186,12 +186,6 @@ export default {
       this.tracks = []
       return new Promise((resolve, reject) => {
         let netmdcli = require('child_process').spawn(netmdcliPath, ['-v'])
-        /* netmdcli.on('close', (code) => {
-          if (code === 0) {
-            console.log('netmdcli returned Success code ' + code)
-            resolve()
-          }
-        }) */
         netmdcli.on('error', (error) => {
           console.log(`child process creating error with error ${error}`)
           reject(error)
@@ -248,7 +242,7 @@ export default {
       let self = this
       if (this.selected[0] !== undefined) {
         let trackNo = this.selected[0].no
-        console.log('Would have deleted: ' + trackNo)
+        console.log('Deleting: ' + trackNo)
         await this.deleteTrack(trackNo, trackNo)
           .then(await function () {
             self.readNetMd()

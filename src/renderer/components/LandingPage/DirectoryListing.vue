@@ -121,6 +121,7 @@ export default {
       processing: 0,
       config: {},
       conversionMode: 'SP',
+      titleFormat: '%title% - %artist%',
       bitrate: 128,
       selectedTrack: {
         trackNo: 0
