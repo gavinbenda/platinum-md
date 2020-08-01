@@ -73,8 +73,14 @@
         </div>
       </template>
       
+      <template v-slot:cell(time)="data">
+        <div class="text-right">
+          {{ data.item.time | timeFormat }}
+        </div>
+      </template>
+
       <template v-slot:cell(options)="data">
-        <div class="text-right" v-if="!isBusy">
+        <div class="text-right">
           <a @click="showEditModal(data.item)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
         </div>
       </template>
@@ -113,6 +119,7 @@ export default {
         { key: 'trackNo', sortable: true, label: 'No' },
         { key: 'title', sortable: true },
         { key: 'artist', sortable: true },
+        { key: 'time', sortable: true },
         // { key: 'album', sortable: true },
         'bitrate',
         { key: 'options', label: '' }
@@ -190,6 +197,7 @@ export default {
                   let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
                   let codec = (metadata.format.codec !== undefined) ? metadata.format.codec.replace(/^MPEG [12] Layer 3$/, 'MP3') : ''
                   let trackNo = (metadata.common.track.no !== undefined) ? metadata.common.track.no : ''
+                  let time = (metadata.format.duration !== undefined) ? metadata.format.duration : 0
                   // filter forbidden filesystem characters
                   // Windows list from: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
                   if (os.platform() === 'win32') {
@@ -208,7 +216,8 @@ export default {
                     trackNo: (trackNo !== null) ? trackNo : 0,
                     format: fileTypeInfo.ext,
                     bitrate: (bitrate !== null) ? Math.round(bitrate / 1000) + 'kbps' : '-',
-                    codec: (codec !== null) ? codec : ''
+                    codec: (codec !== null) ? codec : '',
+                    time: time
                   })
                 })
                 .catch(err => {
