@@ -28,7 +28,7 @@
       </b-row>
     </b-modal>
     
-    <b-container class="toolbar py-2 m-0">
+    <b-container class="toolbar py-2 m-0 sticky-top">
       <b-row align-v="center">
         <b-col cols="1">
           <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
@@ -38,7 +38,7 @@
           <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
         </b-col>
         <b-col class="text-right">
-          <b-button variant="primary" @click="chooseDir" :disabled="isBusy">Folder <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
+          <b-button variant="primary" @click="chooseDir">Folder <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
           <b-button variant="success" @click="upload" :disabled="isBusy">Transfer <font-awesome-icon icon="angle-double-right"></font-awesome-icon></b-button>
         </b-col>
       </b-row>

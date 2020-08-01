@@ -14,7 +14,7 @@
     </b-modal>
     
     <b-overlay :show="showOverlay" rounded="md" class="full-height">
-      <b-container class="toolbar py-2">
+      <b-container class="toolbar py-2 sticky-top">
         <b-row align-v="center">
           <b-col cols="1">
             <b-button variant="outline-light" @click="readNetMd" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
