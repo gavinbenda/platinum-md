@@ -435,7 +435,11 @@ export default {
         })
         // we get a fair bit of useful progress data returned here for debugging
         netmdcli.stdout.on('data', data => {
-          console.log(data.toString())
+          var output = data.toString()
+          console.log(output)
+          if (output.includes('%) transferred')) {
+            this.progress = 'Transferring ' + output.split('bytes (').pop().split(') transferred')[0]
+          }
         })
       })
     },
