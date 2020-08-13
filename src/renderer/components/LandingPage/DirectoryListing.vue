@@ -12,7 +12,7 @@
       </b-row>
       <b-row class="my-1">
         <b-col sm="2">
-          <label for="input-small">Artist:</label>
+          <label for="input-small">Title:</label>
         </b-col>
         <b-col sm="10">
           <b-form-input v-model="selectedTrack.title" placeholder="Title"></b-form-input>
@@ -20,7 +20,7 @@
       </b-row>
       <b-row class="my-1">
         <b-col sm="2">
-          <label for="input-small">Title:</label>
+          <label for="input-small">Artist:</label>
         </b-col>
         <b-col sm="10">
           <b-form-input v-model="selectedTrack.artist" placeholder="Artist"></b-form-input>
