@@ -34,7 +34,7 @@
           <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
         </b-col>
         <b-col>
-          <b>{{ selected.length }}</b> tracks selected {{ conversionMode }}<br />
+          <b>{{ selected.length }}</b> tracks selected {{ conversionMode }} strip {{ sonicStageNosStrip }}<br />
           <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
         </b-col>
         <b-col class="text-right">
@@ -129,6 +129,7 @@ export default {
       config: {},
       conversionMode: 'SP',
       titleFormat: '%title% - %artist%',
+      sonicStageNosStrip: 'true',
       bitrate: 128,
       selectedTrack: {
         trackNo: 0
@@ -191,8 +192,8 @@ export default {
                 .then(metadata => {
                   // console.log(metadata)
                   // Get data for file object
+                  let title = (metadata.common.title !== undefined) ? metadata.common.title : (this.sonicStageNosStrip === 'true') ? path.parse(filePath).name.replace(RegExp(/^\d\d\d-/), '') : path.parse(filePath).name
                   let artist = (metadata.common.artist !== undefined) ? metadata.common.artist : 'No Artist'
-                  let title = (metadata.common.title !== undefined) ? metadata.common.title : path.parse(filePath).name
                   let album = (metadata.common.album !== undefined) ? metadata.common.album : '-'
                   let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
                   let codec = (metadata.format.codec !== undefined) ? metadata.format.codec.replace(/^MPEG [12] Layer 3$/, 'MP3') : ''
@@ -479,6 +480,9 @@ export default {
       }
       if (store.has('conversionMode')) {
         this.conversionMode = store.get('conversionMode')
+      }
+      if (store.has('sonicStageNosStrip')) {
+        this.sonicStageNosStrip = store.get('sonicStageNosStrip')
       }
     }
   }
