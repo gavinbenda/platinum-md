@@ -259,8 +259,7 @@ export default {
         }
         // Convert to desired format
         let finalFile = await this.convert(fileName, this.selected[i])
-        let artistname = (this.selected[i].artist !== 'No Artist') ? ' - ' + this.selected[i].artist : ''
-        let trackTitle = this.selected[i].title + artistname
+        let trackTitle = (this.selected[i].artist !== 'No Artist') ? this.selected[i].title + ' - ' + this.selected[i].artist : this.selected[i].title
         console.log('Conversion Complete.')
         await this.sendToPlayer(finalFile, trackTitle)
         bus.$emit('netmd-status', { eventType: 'transfer-completed' })
