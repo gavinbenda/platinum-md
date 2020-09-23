@@ -1,6 +1,6 @@
 <template>
   <div id="wrapper" class="p-3">
-    
+
     <b-modal @ok="saveSettings" ref="settings-modal" title="Settings">
       <b-form-group label="Transfer Mode:">
         <b-form-radio v-model="conversionMode" name="mode-sp" value="SP">SP (Best quality)</b-form-radio>
@@ -15,7 +15,7 @@
       <hr />
       <b-button variant="outline-primary" @click="showDebugConsole">Debug Window</b-button>
     </b-modal>
-    
+
     <b-container fluid>
       <b-row>
         <b-col cols="6"><img id="logo" src="~@/assets/logo.svg" alt="Platinum MD" class="p-3"></b-col>
@@ -23,7 +23,7 @@
         <b-col class="text-right p-3"><b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button></b-col>
       </b-row>
     </b-container>
-    
+
     <b-container fluid class="p-3">
       <b-row>
         <b-col class="white-bg full-height mx-3 p-0 overflow-auto">
@@ -80,7 +80,7 @@
           this.conversionMode = store.get('conversionMode')
         }
         if (store.has('titleFormat')) {
-          this.conversionMode = store.get('titleFormat')
+          this.titleFormat = store.get('titleFormat')
         }
       },
       /**
