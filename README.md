@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/gavinbenda/platinum-md.svg?branch=master)](https://travis-ci.org/gavinbenda/platinum-md) 
+[![Build Status](https://travis-ci.org/gavinbenda/platinum-md.svg?branch=master)](https://travis-ci.org/gavinbenda/platinum-md)
 
 # Platinum-MD
 
@@ -17,7 +17,7 @@ You will need to install homebrew: https://docs.brew.sh/Installation
 
 Then install the following:
 
-`brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg && brew link --force qt5`
+`brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg json-c && brew link --force qt5`
 
 ##### Windows
 
@@ -113,4 +113,3 @@ The ATRAC Encoder by @dcherednik
 I do this as a personal project, and a few people have expressed interested in donating to keep the project going, this will simply go back into buying test hardware and/or possibly coffee.
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XVS44CZYFPCJJ)
-
