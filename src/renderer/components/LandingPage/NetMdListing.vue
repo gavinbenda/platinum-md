@@ -1,18 +1,18 @@
 <template>
   <div>
-    
+
     <b-modal @ok="renameTrack" ref="rename-track" title="Rename Track">
       <b-form-input v-model="renameTrackName" placeholder="Track Name"></b-form-input>
     </b-modal>
-    
+
     <b-modal @ok="renameDisc" ref="rename-disc" title="Rename Disc">
       <b-form-input v-model="info.title" placeholder="Disc Name"></b-form-input>
     </b-modal>
-    
+
     <b-modal @ok="moveTrack" ref="move-track" title="Move Track">
       <b-form-input v-model="newTrackPosition" placeholder="Move to position (number):"></b-form-input>
     </b-modal>
-    
+
     <b-overlay :show="showOverlay" rounded="md" class="full-height">
       <b-container class="toolbar py-2 sticky-top">
         <b-row align-v="center">
@@ -21,10 +21,11 @@
           </b-col>
           <b-col>
             <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
-            <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }}</a></b-badge> 
+            <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }}</a></b-badge>
             <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
           </b-col>
           <b-col class="text-right">
+            <b-button variant="success" @click="download" :disabled="isBusy"><< Transfer</b-button>
             <b-button variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
             <b-dropdown class="danger my-0 py-0">
                 <b-dropdown-item>
@@ -34,7 +35,7 @@
           </b-col>
         </b-row>
       </b-container>
-  
+
       <b-table
         selectable
         striped
@@ -49,37 +50,37 @@
           <b-spinner class="align-middle"></b-spinner>
           <strong>Loading...</strong>
         </div>
-        
+
         <template v-slot:cell(no)="data">
           <h5 class="mb-0"><b-badge>{{ data.item.no + 1 }}</b-badge></h5>
         </template>
-        
+
         <template v-slot:cell(name)="data">
           {{ data.item.name }}
         </template>
-        
+
         <template v-slot:cell(time)="data">
           <i>{{ data.item.time }}</i>
         </template>
-        
+
         <template v-slot:cell(name)="data">
           <span v-if="data.item.name == ' '">Untitled</span><span v-else>{{ data.item.name }}</span>
           <a @click="showRenameModal(data.item.no, data.item.name)" title="Edit Track"><font-awesome-icon icon="edit"></font-awesome-icon></a>
           <a @click="showMoveTrackModal(data.item.no)" title="Move Track"><font-awesome-icon icon="random"></font-awesome-icon></a>
           <a @click="runAction('play', data.item.no)" title="Play Track"><font-awesome-icon icon="play"></font-awesome-icon></a>
         </template>
-        
+
         <template v-slot:cell(formatted)="data">
           <div class="text-right" v-if="!isBusy">
             <b-badge variant="primary" class="text-uppercase">{{ data.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase"><span v-if="data.item.bitrate != 'LP2' && data.item.bitrate != 'LP4'">SP / </span> -</b-badge>
             <span v-if="data.item.format == 'TrPROT'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
           </div>
         </template>
-  
+
       </b-table>
 
       <template v-slot:overlay>
-                
+
         <div class="text-center">
           <div v-if="communicating">
             <b-spinner varient="success" label="Spinner" variant="success"></b-spinner>
@@ -100,16 +101,18 @@
           </b-button>
         </div>
       </template>
-      
+
     </b-overlay>
-    
+
   </div>
 </template>
 
 <script>
 import bus from '@/bus'
-import { netmdcliPath } from '@/binaries'
+import { uploadPyPath, netmdcliPath } from '@/binaries'
+import { PythonShell } from 'python-shell'
 const usbDetect = require('usb-detection')
+const homedir = require('os').homedir()
 export default {
   data () {
     return {
@@ -129,7 +132,9 @@ export default {
       oldTrackPosition: 0,
       newTrackPosition: 0,
       showOverlay: true,
-      communicating: false
+      communicating: false,
+      outputDir: homedir + '/pmd-music/',
+      rh1: false
     }
   },
   mounted () {
@@ -214,6 +219,11 @@ export default {
               resolve()
             }
           }
+        })
+        // if RH1, show button. VID/PID taken from libnetmd/netmd_dev.c {0x54c, 0x286}
+        usbDetect.find(0x54c, 0x286, function (err, devices) {
+          console.log('Found RH1: ', devices, err)
+          this.rh1 = true
         })
       })
     },
@@ -378,6 +388,34 @@ export default {
         return false
       }
       return true
+    },
+    /**
+      * Download selected track from player and convert.
+      */
+    download: async function () {
+      var trackno = this.selected[0].no + 1
+      console.log('Downloading track from device: ' + trackno)
+      let options = {
+        mode: 'text',
+        pythonOptions: ['-u'],
+        pythonPath: 'python2',
+        scriptPath: uploadPyPath,
+        args: ['-t', trackno, '-o', this.outputDir]
+      }
+      // Check or Create temp directory
+      try {
+        this.ensureDirSync(this.outputDir)
+        console.log('Download directory created')
+      } catch (err) {
+        console.error(err)
+      }
+      PythonShell.run('upload.py', options, function (err, results) {
+        if (err) throw err
+        // results is an array consisting of messages collected during execution
+        console.log('Download from MD results: %j', results)
+      })
+      // refresh the netmd panel due to loosing connection during download
+      setTimeout(() => { this.readNetMd() }, 3000)
     }
   }
 }
