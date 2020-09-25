@@ -8,12 +8,12 @@ from struct import pack
 
 RIFF_FORMAT_TAG_ATRAC3 = 0x270
 
-def main(bus=None, device_address=None, track_range=None, output_path=None):
+def main(bus=None, device_address=None, track_range=None, output_path=None, sonicstage_nos=False):
     context = usb1.LibUSBContext()
     for md in libnetmd.iterdevices(context, bus=bus,
                                    device_address=device_address):
         md_iface = libnetmd.NetMDInterface(md)
-        MDDump(md_iface, track_range, output_path)
+        MDDump(md_iface, track_range, output_path, sonicstage_nos)
 
 def getTrackList(md_iface, track_range):
     channel_count_dict = {
@@ -115,7 +115,7 @@ class wavUploadEvents(libnetmd.defaultUploadEvents):
         self.stream.write(formatWavHeader(format, bytes))
         libnetmd.defaultUploadEvents.trackinfo(self, frames, bytes, format)
 
-def MDDump(md_iface, track_range, output_path):
+def MDDump(md_iface, track_range, output_path, sonicstage_nos):
     ascii_title = md_iface.getDiscTitle()
     wchar_title = md_iface.getDiscTitle(True).decode('shift_jis')
     disc_title = wchar_title or ascii_title
@@ -136,13 +136,19 @@ def MDDump(md_iface, track_range, output_path):
             extension = 'aea'
         else:
             extension = 'wav'
-        filename = '%s/%02i - %s.%s' % (directory, track + 1, ''.join(c for c in title if c in valid_chars), extension)
-        print 'Uploading', filename
-        aeafile = open(filename,"wb")
-        if codec == libnetmd.ENCODING_SP:
-            md_iface.saveTrackToStream(track, aeafile,events=aeaUploadEvents(aeafile, channels, title))
+        if sonicstage_nos:
+            # write track numbers in the same format as when uploading from sonicstage
+            filename = '%s/%03i-%s.%s' % (directory, track + 1, ''.join(c for c in title if c in valid_chars), extension)
         else:
-            md_iface.saveTrackToStream(track, aeafile,events=wavUploadEvents(aeafile))
+            # write traditional upload.py song numbers
+            filename = '%s/%02i - %s.%s' % (directory, track + 1, ''.join(c for c in title if c in valid_chars), extension)
+        print 'Uploading', filename
+        with open(filename,"wb") as aeafile:
+            if codec == libnetmd.ENCODING_SP:
+                md_iface.saveTrackToStream(track, aeafile,events=aeaUploadEvents(aeafile, channels, title))
+            else:
+                md_iface.saveTrackToStream(track, aeafile,events=wavUploadEvents(aeafile))
+            print "Wrote: %s" % filename
 
     # TODO: generate playlists based on groups defined on the MD
     print 'Finished.'
@@ -154,6 +160,9 @@ if __name__ == '__main__':
     parser.add_option('-d', '--device')
     parser.add_option('-t', '--track-range')
     parser.add_option('-o', '--output-path')
+    parser.add_option("-s", "--sonicstage-nos",
+                  action="store_true", default=False,
+                  help="Use SonicStage style track numbering not traditional upload.py")
     (options, args) = parser.parse_args()
     assert len(args) < 3
     track_range = options.track_range
@@ -173,4 +182,4 @@ if __name__ == '__main__':
         else:
             track_range = int(track_range) - 1
     main(bus=options.bus, device_address=options.device,
-         track_range=track_range, output_path=options.output_path)
+         track_range=track_range, output_path=options.output_path, sonicstage_nos=options.sonicstage_nos)

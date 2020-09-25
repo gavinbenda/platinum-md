@@ -409,13 +409,25 @@ export default {
       } catch (err) {
         console.error(err)
       }
-      PythonShell.run('upload.py', options, function (err, results) {
+      var pyshell = new PythonShell('upload.py', options, function (err, results) {
         if (err) throw err
-        // results is an array consisting of messages collected during execution
-        console.log('Download from MD results: %j', results)
       })
-      // refresh the netmd panel due to loosing connection during download
-      setTimeout(() => { this.readNetMd() }, 3000)
+      pyshell.on('message', function (message) {
+        // received a message sent from the Python script (a simple "print" statement)
+        if (message.match(/^Done:/)) {
+          console.log(message.split(' ')[2].replace(/\(/, '').replace(/\)/, ''))
+        }
+        if (message.match(/^Wrote:/)) {
+          console.log('Download file: ' + message.split(' ')[1])
+        }
+      })
+      // end the input stream and allow the process to exit
+      pyshell.end(function (err) {
+        if (err) throw err
+        console.log('Finished pythonshell download of track ' + trackno)
+        // refresh the netmd panel due to loosing connection during download
+        setTimeout(() => { this.readNetMd() }, 3000)
+      })
     }
   }
 }
