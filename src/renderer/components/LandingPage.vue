@@ -1,6 +1,6 @@
 <template>
   <div id="wrapper" class="p-3">
-    
+
     <b-modal @ok="saveSettings" ref="settings-modal" title="Settings">
       <b-form-group label="Transfer Mode:">
         <b-form-radio v-model="conversionMode" name="mode-sp" value="SP">SP (Best quality)</b-form-radio>
@@ -12,10 +12,13 @@
       <b>Title Format</b>
       <p>Options: <b-badge>%title%</b-badge> <b-badge>%artist%</b-badge> <b-badge>%trackno%</b-badge></p>
       <b-form-input v-model="titleFormat"></b-form-input>
+      <br>
+      <b-form-checkbox type="checkbox" name="sonicstage-titles" id="sonicstage-titles" v-model="sonicStageNosStrip">
+      <label for="sonicstage-titles">Strip SonicStage track numbers from titles (e.g 001-Title)</label>
       <hr />
       <b-button variant="outline-primary" @click="showDebugConsole">Debug Window</b-button>
     </b-modal>
-    
+
     <b-container fluid>
       <b-row>
         <b-col cols="6"><img id="logo" src="~@/assets/logo.svg" alt="Platinum MD" class="p-3"></b-col>
@@ -23,7 +26,7 @@
         <b-col class="text-right p-3"><b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button></b-col>
       </b-row>
     </b-container>
-    
+
     <b-container fluid class="p-3">
       <b-row>
         <b-col class="white-bg full-height mx-3 p-0 overflow-auto">
@@ -51,7 +54,8 @@
     data () {
       return {
         conversionMode: 'SP',
-        titleFormat: '%title% - %artist%'
+        titleFormat: '%title% - %artist%',
+        sonicStageNosStrip: true
       }
     },
     created () {
@@ -70,6 +74,7 @@
       saveSettings: function () {
         store.set('conversionMode', this.conversionMode)
         store.set('titleFormat', this.titleFormat)
+        store.set('sonicStageNosStrip', this.sonicStageNosStrip)
         bus.$emit('config-update')
       },
       /**
@@ -81,6 +86,9 @@
         }
         if (store.has('titleFormat')) {
           this.conversionMode = store.get('titleFormat')
+        }
+        if (store.has('sonicStageNosStrip')) {
+          this.sonicStageNosStrip = store.get('sonicStageNosStrip')
         }
       },
       /**

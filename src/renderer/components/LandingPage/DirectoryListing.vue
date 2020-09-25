@@ -1,6 +1,6 @@
 <template>
   <div>
-  
+
     <b-modal @ok="editTrack" ref="edit-track" title="Edit Track">
       <b-row class="my-1">
         <b-col sm="2">
@@ -27,7 +27,7 @@
         </b-col>
       </b-row>
     </b-modal>
-    
+
     <b-container class="toolbar py-2 m-0 sticky-top">
       <b-row align-v="center">
         <b-col cols="1">
@@ -43,7 +43,7 @@
         </b-col>
       </b-row>
     </b-container>
-    
+
     <b-table
       selectable
       striped
@@ -60,19 +60,19 @@
         <b-spinner class="align-middle"></b-spinner>
         <strong>Loading...</strong>
       </div>
-      
+
       <template v-slot:cell(trackNo)="data">
         <div>
           <h5 class="mb-0"><b-badge>{{ data.item.trackNo }}</b-badge></h5>
         </div>
       </template>
-      
+
       <template v-slot:cell(bitrate)="data">
         <div class="text-right">
           <b-badge variant="success" class="text-uppercase">{{ data.item.bitrate }} {{ data.item.codec }}</b-badge>
         </div>
       </template>
-      
+
       <template v-slot:cell(time)="data">
         <div class="text-right">
           {{ data.item.time | timeFormat }}
@@ -84,9 +84,9 @@
           <a @click="showEditModal(data.item)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
         </div>
       </template>
-      
+
     </b-table>
- 
+
   </div>
 </template>
 
@@ -129,6 +129,7 @@ export default {
       config: {},
       conversionMode: 'SP',
       titleFormat: '%title% - %artist%',
+      sonicStageNosStrip: 'true',
       bitrate: 128,
       selectedTrack: {
         trackNo: 0
@@ -191,8 +192,8 @@ export default {
                 .then(metadata => {
                   // console.log(metadata)
                   // Get data for file object
+                  let title = (metadata.common.title !== undefined) ? metadata.common.title : (this.sonicStageNosStrip === true) ? path.parse(filePath).name.replace(RegExp(/^\d\d\d-/), '') : path.parse(filePath).name
                   let artist = (metadata.common.artist !== undefined) ? metadata.common.artist : 'No Artist'
-                  let title = (metadata.common.title !== undefined) ? metadata.common.title : filePath
                   let album = (metadata.common.album !== undefined) ? metadata.common.album : '-'
                   let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
                   let codec = (metadata.format.codec !== undefined) ? metadata.format.codec.replace(/^MPEG [12] Layer 3$/, 'MP3') : ''
@@ -259,7 +260,7 @@ export default {
         }
         // Convert to desired format
         let finalFile = await this.convert(fileName, this.selected[i])
-        let trackTitle = this.selected[i].title + ' - ' + this.selected[i].artist
+        let trackTitle = (this.selected[i].artist !== 'No Artist') ? this.selected[i].title + ' - ' + this.selected[i].artist : this.selected[i].title
         console.log('Conversion Complete.')
         await this.sendToPlayer(finalFile, trackTitle)
         bus.$emit('netmd-status', { eventType: 'transfer-completed' })
@@ -479,6 +480,9 @@ export default {
       }
       if (store.has('conversionMode')) {
         this.conversionMode = store.get('conversionMode')
+      }
+      if (store.has('sonicStageNosStrip')) {
+        this.sonicStageNosStrip = store.get('sonicStageNosStrip')
       }
     }
   }
