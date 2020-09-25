@@ -23,6 +23,7 @@
             <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
             <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }}</a></b-badge>
             <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
+            <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
           </b-col>
           <b-col class="text-right">
             <b-button variant="success" @click="download" :disabled="isBusy"><< Transfer</b-button>
@@ -110,9 +111,11 @@
 <script>
 import bus from '@/bus'
 import { uploadPyPath, netmdcliPath } from '@/binaries'
+import { convertToWav, ensureDirSync } from '@/common'
 import { PythonShell } from 'python-shell'
 const usbDetect = require('usb-detection')
 const homedir = require('os').homedir()
+const del = require('del')
 export default {
   data () {
     return {
@@ -134,7 +137,8 @@ export default {
       showOverlay: true,
       communicating: false,
       outputDir: homedir + '/pmd-music/',
-      rh1: false
+      rh1: false,
+      progress: 'Idle'
     }
   },
   mounted () {
@@ -394,7 +398,9 @@ export default {
       */
     download: async function () {
       var trackno = this.selected[0].no + 1
+      let downloadFile = ''
       console.log('Downloading track from device: ' + trackno)
+      this.progress = 'Downloading track ' + trackno
       let options = {
         mode: 'text',
         pythonOptions: ['-u'],
@@ -404,7 +410,7 @@ export default {
       }
       // Check or Create temp directory
       try {
-        this.ensureDirSync(this.outputDir)
+        ensureDirSync(this.outputDir)
         console.log('Download directory created')
       } catch (err) {
         console.error(err)
@@ -415,18 +421,25 @@ export default {
       pyshell.on('message', function (message) {
         // received a message sent from the Python script (a simple "print" statement)
         if (message.match(/^Done:/)) {
+          this.progress = 'Downloading track ' + trackno + ' - ' + message.split(' ')[2].replace(/\(/, '').replace(/\)/, '')
           console.log(message.split(' ')[2].replace(/\(/, '').replace(/\)/, ''))
         }
         if (message.match(/^Wrote:/)) {
-          console.log('Download file: ' + message.split(' ')[1])
+          downloadFile = message.split(' ').slice(1).join(' ')
+          console.log('Download file: ' + downloadFile)
         }
       })
       // end the input stream and allow the process to exit
       pyshell.end(function (err) {
         if (err) throw err
         console.log('Finished pythonshell download of track ' + trackno)
-        // refresh the netmd panel due to loosing connection during download
-        setTimeout(() => { this.readNetMd() }, 3000)
+        this.progress = 'Idle'
+        var outputFile = downloadFile.toString().replace('.aea', '.wav')
+
+        return new Promise(async (resolve, reject) => {
+          await convertToWav(downloadFile, outputFile, '')
+          resolve((del.sync([downloadFile], {force: true})))
+        })
       })
     }
   }

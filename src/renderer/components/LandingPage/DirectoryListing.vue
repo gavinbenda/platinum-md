@@ -1,6 +1,6 @@
 <template>
   <div>
-  
+
     <b-modal @ok="editTrack" ref="edit-track" title="Edit Track">
       <b-row class="my-1">
         <b-col sm="2">
@@ -27,7 +27,7 @@
         </b-col>
       </b-row>
     </b-modal>
-    
+
     <b-container class="toolbar py-2 m-0 sticky-top">
       <b-row align-v="center">
         <b-col cols="1">
@@ -43,7 +43,7 @@
         </b-col>
       </b-row>
     </b-container>
-    
+
     <b-table
       selectable
       striped
@@ -60,19 +60,19 @@
         <b-spinner class="align-middle"></b-spinner>
         <strong>Loading...</strong>
       </div>
-      
+
       <template v-slot:cell(trackNo)="data">
         <div>
           <h5 class="mb-0"><b-badge>{{ data.item.trackNo }}</b-badge></h5>
         </div>
       </template>
-      
+
       <template v-slot:cell(bitrate)="data">
         <div class="text-right">
           <b-badge variant="success" class="text-uppercase">{{ data.item.bitrate }} {{ data.item.codec }}</b-badge>
         </div>
       </template>
-      
+
       <template v-slot:cell(time)="data">
         <div class="text-right">
           {{ data.item.time | timeFormat }}
@@ -84,15 +84,16 @@
           <a @click="showEditModal(data.item)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
         </div>
       </template>
-      
+
     </b-table>
- 
+
   </div>
 </template>
 
 <script>
 import bus from '@/bus'
 import { atracdencPath, netmdcliPath } from '@/binaries'
+import { convertToWav, ensureDirSync } from '@/common'
 import clone from 'lodash/clone'
 import os from 'os'
 import path from 'path'
@@ -252,8 +253,8 @@ export default {
         var fileName = this.selected[i].fileName
         // Check or Create temp directory
         try {
-          this.ensureDirSync(this.dir + this.tempDirectory)
-          console.log('Directory created')
+          ensureDirSync(this.dir + this.tempDirectory)
+          console.log('Directory created' + this.dir + this.tempDirectory)
         } catch (err) {
           console.error(err)
         }
@@ -287,7 +288,8 @@ export default {
         // The encoding process is handled by the NetMD device
         console.log('Starting conversion in <' + this.conversionMode + '> mode')
         if (this.conversionMode === 'SP') {
-          await self.convertToWav(sourceFile, finalFile, fileExtension)
+          this.progress = 'Converting to Wav'
+          await convertToWav(sourceFile, finalFile, fileExtension)
         // uploading as LP2
         // This uses an experimental ATRAC3 encoder
         // The files are converted into ATRAC locally, and then sent to the NetMD device
@@ -297,47 +299,6 @@ export default {
           await self.convertToWavWrapper(atracFile, finalFile)
         }
         resolve(finalFile)
-      })
-    },
-    /**
-      * Convert input audio file to WAV file using ffmpeg
-      * This MUST be 44100 and 16bit for the atrac encoder to work
-      */
-    convertToWav: async function (source, dest, conversionMode) {
-      this.progress = 'Converting to Wav'
-      return new Promise(async (resolve, reject) => {
-        // check the filetype, and choose the output
-        switch (this.conversionMode) {
-          case 'LP2':
-            this.bitrate = 128
-            break
-          case 'LP4':
-            this.bitrate = 64
-            break
-        }
-        // Start conversion
-        console.log('Starting WAV conversion process using ffmpeg: ' + source + ' --> ' + dest)
-        ffmpeg(source)
-          .output(dest)
-          .outputOption(['-acodec', 'pcm_s16le'])
-          .audioFrequency(44100)
-          .on('start', function (commandLine) {
-            console.log('Spawned Ffmpeg with command: ', commandLine)
-          })
-          .on('progress', function (progress) {
-            console.log('Processing: ' + progress.timemark + ' done ' + progress.targetSize + ' kilobytes')
-          })
-          // If successful, resolve
-          .on('end', function () {
-            console.log('ffmpeg completed successfully')
-            resolve()
-          })
-          // Reject if we get any errors
-          .on('error', function (err) {
-            console.log('ffmpeg error: ' + err.message)
-            reject(err.message)
-          })
-          .run()
       })
     },
     /**
@@ -459,16 +420,6 @@ export default {
       this.selectedTrackSource.trackNo = this.selectedTrack.trackNo
       this.selectedTrackSource.title = this.selectedTrack.title
       this.selectedTrackSource.artist = this.selectedTrack.artist
-    },
-    /**
-      * Make sure temp directory actually exists, if not create it
-      */
-    ensureDirSync: function (dirpath) {
-      try {
-        fs.mkdirSync(dirpath, { recursive: true })
-      } catch (err) {
-        if (err.code !== 'EEXIST') throw err
-      }
     },
     /**
       * Read-in config file
