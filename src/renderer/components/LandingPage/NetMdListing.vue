@@ -406,7 +406,7 @@ export default {
         pythonOptions: ['-u'],
         pythonPath: 'python2',
         scriptPath: uploadPyPath,
-        args: ['-t', trackno, '-o', this.outputDir]
+        args: ['-s', '-t', trackno, '-o', this.outputDir]
       }
       // Check or Create temp directory
       try {
