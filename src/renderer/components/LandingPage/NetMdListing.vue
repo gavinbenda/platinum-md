@@ -26,7 +26,7 @@
             <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
           </b-col>
           <b-col class="text-right">
-            <b-button variant="success" @click="download" :disabled="isBusy"><< Transfer</b-button>
+            <b-button variant="success" @click="download" v-show=rh1 :disabled="isBusy"><< Transfer</b-button>
             <b-button variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
             <b-dropdown class="danger my-0 py-0">
                 <b-dropdown-item>
@@ -193,6 +193,7 @@ export default {
       bus.$emit('netmd-status', { eventType: 'no-connection' })
       console.log('Attempting to read from NetMD')
       this.tracks = []
+      this.rh1 = false
       return new Promise((resolve, reject) => {
         let netmdcli = require('child_process').spawn(netmdcliPath, ['-v'])
         netmdcli.on('error', (error) => {
@@ -226,8 +227,8 @@ export default {
         })
         // if RH1, show button. VID/PID taken from libnetmd/netmd_dev.c {0x54c, 0x286}
         usbDetect.find(0x54c, 0x286, function (err, devices) {
-          console.log('Found RH1: ', devices, err)
           this.rh1 = true
+          console.log('Found RH1: ' + this.rh1, devices, err)
         })
       })
     },
