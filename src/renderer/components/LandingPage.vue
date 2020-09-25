@@ -85,7 +85,7 @@
           this.conversionMode = store.get('conversionMode')
         }
         if (store.has('titleFormat')) {
-          this.conversionMode = store.get('titleFormat')
+          this.titleFormat = store.get('titleFormat')
         }
         if (store.has('sonicStageNosStrip')) {
           this.sonicStageNosStrip = store.get('sonicStageNosStrip')
