@@ -12,9 +12,8 @@
       <b>Title Format</b>
       <p>Options: <b-badge>%title%</b-badge> <b-badge>%artist%</b-badge> <b-badge>%trackno%</b-badge></p>
       <b-form-input v-model="titleFormat"></b-form-input>
-      <br>
-      <b-form-checkbox type="checkbox" name="sonicstage-titles" id="sonicstage-titles" v-model="sonicStageNosStrip">
-      <label for="sonicstage-titles">Strip SonicStage track numbers from titles (e.g 001-Title)</label>
+      <hr />
+      <b-form-checkbox type="checkbox" name="sonicstage-titles" id="sonicstage-titles" v-model="sonicStageNosStrip">Strip SonicStage track numbers from titles (e.g 001-Title)</b-form-checkbox>
       <hr />
       <b-button variant="outline-primary" @click="showDebugConsole">Debug Window</b-button>
     </b-modal>
