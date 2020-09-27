@@ -34,6 +34,7 @@
           <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
         </b-col>
         <b-col>
+          {{ this.dir }}<br />
           <b>{{ selected.length }}</b> tracks selected {{ conversionMode }}<br />
           <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
         </b-col>
@@ -148,11 +149,13 @@ export default {
       this.readConfig()
     })
     bus.$on('netmd-status', (data) => {
-      console.log(data.eventType)
-      if (data.eventType === 'busy' || data.eventType === 'no-connection') {
-        this.isBusy = true
-      } else {
-        this.isBusy = false
+      if ('eventType' in data) {
+        console.log(data.eventType)
+        if (data.eventType === 'busy' || data.eventType === 'no-connection') {
+          this.isBusy = true
+        } else {
+          this.isBusy = false
+        }
       }
     })
   },
@@ -390,6 +393,7 @@ export default {
             reject(code)
           }
           this.progress = 'Idle'
+          bus.$emit('netmd-status', { progress: 'Idle' })
         })
         netmdcli.on('error', (error) => {
           console.log(`netmdcli send errored with error ${error}`)
@@ -401,6 +405,7 @@ export default {
           console.log(output)
           if (output.includes('%) transferred')) {
             this.progress = 'Transferring ' + output.split('bytes (').pop().split(') transferred')[0]
+            bus.$emit('netmd-status', { progress: 'Receiving ' + trackTitle })
           }
         })
       })

@@ -26,7 +26,7 @@
             <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
           </b-col>
           <b-col class="text-right">
-            <b-button variant="success" @click="download" v-show=true :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
+            <b-button variant="success" @click="download" v-show=rh1 :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
             <b-button variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
             <b-dropdown class="danger my-0 py-0">
                 <b-dropdown-item>
@@ -147,21 +147,31 @@ export default {
       this.readNetMd()
     })
     bus.$on('netmd-status', (data) => {
-      console.log(data.eventType)
-      if (data.eventType === 'no-connection') {
-        this.showOverlay = true
-      } else {
-        this.showOverlay = false
+      if ('eventType' in data) {
+        console.log(data)
+        if (data.eventType === 'no-connection') {
+          this.showOverlay = true
+        } else {
+          this.showOverlay = false
+        }
+        if (data.eventType === 'busy' || data.eventType === 'no-connection') {
+          this.isBusy = true
+        } else {
+          this.isBusy = false
+        }
       }
-      if (data.eventType === 'busy' || data.eventType === 'no-connection') {
-        this.isBusy = true
-      } else {
-        this.isBusy = false
+      if ('deviceName' in data) {
+        this.rh1 = (data.deviceName === 'Sony MZ-RH1')
+      }
+      if ('progress' in data) {
+        this.progress = data.progress
       }
     })
+
     bus.$on('track-action', (data) => {
       this.runAction(data.action, data.trackNo)
     })
+
     this.readNetMd()
     // USB auto-detection
     usbDetect.startMonitoring()
@@ -190,10 +200,9 @@ export default {
       * The python output is actually easier to work with but can't include that in the app easily
       */
     readNetMd: function () {
-      bus.$emit('netmd-status', { eventType: 'no-connection' })
+      bus.$emit('netmd-status', { eventType: 'no-connection', deviceName: '' })
       console.log('Attempting to read from NetMD')
       this.tracks = []
-      this.rh1 = false
       return new Promise((resolve, reject) => {
         let netmdcli = require('child_process').spawn(netmdcliPath, ['-v'])
         netmdcli.on('error', (error) => {
@@ -226,9 +235,14 @@ export default {
           }
         })
         // if RH1, show button. VID/PID taken from libnetmd/netmd_dev.c {0x54c, 0x286}
+        console.log(usbDetect.find(0x54c, 0x286))
         usbDetect.find(0x54c, 0x286, function (err, devices) {
-          this.rh1 = true
-          console.log('Found RH1: ' + this.rh1, devices, err)
+          if (err) {
+            console.log(err)
+            throw err
+          }
+          console.log(devices)
+          if (devices.length) bus.$emit('netmd-status', { deviceName: 'Sony MZ-RH1' })
         })
       })
     },
@@ -397,11 +411,12 @@ export default {
     /**
       * Download selected track from player and convert.
       */
-    download: async function () {
+    download: function () {
+      bus.$emit('netmd-status', { eventType: 'busy' })
       var trackno = this.selected[0].no + 1
       let downloadFile = ''
       console.log('Downloading track from device: ' + trackno)
-      this.progress = 'Downloading track ' + trackno
+      bus.$emit('netmd-status', { progress: 'Downloading track ' + trackno })
       let options = {
         mode: 'text',
         pythonOptions: ['-u'],
@@ -414,6 +429,7 @@ export default {
         ensureDirSync(this.outputDir)
         console.log('Download directory created')
       } catch (err) {
+        // TODO: notify user could not create download dir
         console.error(err)
       }
       var pyshell = new PythonShell('upload.py', options, function (err, results) {
@@ -422,8 +438,7 @@ export default {
       pyshell.on('message', function (message) {
         // received a message sent from the Python script (a simple "print" statement)
         if (message.match(/^Done:/)) {
-          this.progress = 'Downloading track ' + trackno + ' - ' + message.split(' ')[2].replace(/\(/, '').replace(/\)/, '')
-          console.log(message.split(' ')[2].replace(/\(/, '').replace(/\)/, ''))
+          bus.$emit('netmd-status', { progress: 'Downloading track ' + trackno + ' - ' + message.split(' ')[2].replace(/\(/, '').replace(/\)/, '') })
         }
         if (message.match(/^Wrote:/)) {
           downloadFile = message.split(' ').slice(1).join(' ')
@@ -434,7 +449,7 @@ export default {
       pyshell.end(function (err) {
         if (err) throw err
         console.log('Finished pythonshell download of track ' + trackno)
-        this.progress = 'Idle'
+        bus.$emit('netmd-status', { progress: 'Idle' })
         var outputFile = downloadFile.toString().replace('.aea', '.wav')
 
         return new Promise(async (resolve, reject) => {
