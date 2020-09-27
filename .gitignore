@@ -10,4 +10,4 @@ npm-debug.log.*
 thumbs.db
 !.gitkeep
 design-files
-*.pyc
+resources/netmd-py/*.pyc

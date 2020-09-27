@@ -21,12 +21,12 @@
           </b-col>
           <b-col>
             <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
-            <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }}</a></b-badge>
+            <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }} <font-awesome-icon icon="edit"></font-awesome-icon></a></b-badge>
             <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
             <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
           </b-col>
           <b-col class="text-right">
-            <b-button variant="success" @click="download" v-show=rh1 :disabled="isBusy"><< Transfer</b-button>
+            <b-button variant="success" @click="download" v-show=true :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
             <b-button variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
             <b-dropdown class="danger my-0 py-0">
                 <b-dropdown-item>
