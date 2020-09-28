@@ -19,6 +19,7 @@
           <b-col cols="1">
             <b-button variant="outline-light" @click="readNetMd" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
           </b-col>
+          <p>{{ downloadDir }} {{ downloadFormat }}</p>
           <b-col>
             <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
             <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }} <font-awesome-icon icon="edit"></font-awesome-icon></a></b-badge>
@@ -116,6 +117,8 @@ import { PythonShell } from 'python-shell'
 const usbDetect = require('usb-detection')
 const homedir = require('os').homedir()
 const del = require('del')
+const Store = require('electron-store')
+const store = new Store()
 export default {
   data () {
     return {
@@ -136,7 +139,8 @@ export default {
       newTrackPosition: 0,
       showOverlay: true,
       communicating: false,
-      outputDir: homedir + '/pmd-music/',
+      downloadDir: homedir + '/pmd-music/',
+      downloadFormat: 'flac',
       rh1: false,
       progress: 'Idle'
     }
@@ -167,9 +171,11 @@ export default {
         this.progress = data.progress
       }
     })
-
     bus.$on('track-action', (data) => {
       this.runAction(data.action, data.trackNo)
+    })
+    bus.$on('config-update', () => {
+      this.readConfig()
     })
 
     this.readNetMd()
@@ -241,7 +247,6 @@ export default {
             console.log(err)
             throw err
           }
-          console.log(devices)
           if (devices.length) bus.$emit('netmd-status', { deviceName: 'Sony MZ-RH1' })
         })
       })
@@ -413,6 +418,7 @@ export default {
       */
     download: function () {
       bus.$emit('netmd-status', { eventType: 'busy' })
+      console.log('this.downloadFormat download ' + this.downloadFormat)
       var trackno = this.selected[0].no + 1
       let downloadFile = ''
       console.log('Downloading track from device: ' + trackno)
@@ -422,16 +428,17 @@ export default {
         pythonOptions: ['-u'],
         pythonPath: 'python2',
         scriptPath: uploadPyPath,
-        args: ['-s', '-t', trackno, '-o', this.outputDir]
+        args: ['-s', '-t', trackno, '-o', this.downloadDir]
       }
       // Check or Create temp directory
       try {
-        ensureDirSync(this.outputDir)
+        ensureDirSync(this.downloadDir)
         console.log('Download directory created')
       } catch (err) {
         // TODO: notify user could not create download dir
         console.error(err)
       }
+      console.log('this.downloadFormat download ' + this.downloadFormat.toLowerCase())
       var pyshell = new PythonShell('upload.py', options, function (err, results) {
         if (err) throw err
       })
@@ -448,15 +455,28 @@ export default {
       // end the input stream and allow the process to exit
       pyshell.end(function (err) {
         if (err) throw err
+        console.log('this.downloadFormat download pyshell end ' + this.downloadFormat.toLowerCase())
         console.log('Finished pythonshell download of track ' + trackno)
         bus.$emit('netmd-status', { progress: 'Idle' })
-        var outputFile = downloadFile.toString().replace('.aea', '.wav')
-
+        console.log(this.downloadFormat)
+        var outputFile = downloadFile.toString().replace('.aea', this.downloadFormat.toLowerCase())
         return new Promise(async (resolve, reject) => {
-          await convertToWav(downloadFile, outputFile, '')
+          await convertToWav(downloadFile, outputFile, this.downloadFormat)
           resolve((del.sync([downloadFile], {force: true})))
         })
       })
+    },
+    /**
+      * Read-in config file
+      */
+    readConfig: function () {
+      if (store.has('downloadDir')) {
+        this.downloadDir = store.get('downloadDir')
+      }
+      if (store.has('downloadFormat')) {
+        this.downloadFormat = store.get('downloadFormat')
+        console.log('this.downloadFormat ' + this.downloadFormat)
+      }
     }
   }
 }

@@ -298,7 +298,16 @@ export default {
         // This uses an experimental ATRAC3 encoder
         // The files are converted into ATRAC locally, and then sent to the NetMD device
         } else {
-          await self.convertToWav(sourceFile, destFile, fileExtension)
+          // check the filetype, and choose the output
+          switch (this.conversionMode) {
+            case 'LP2':
+              this.bitrate = 128
+              break
+            case 'LP4':
+              this.bitrate = 64
+              break
+          }
+          await convertToWav(sourceFile, destFile)
           await self.convertToAtrac(destFile, atracFile)
           await self.convertToWavWrapper(atracFile, finalFile)
         }
