@@ -18,9 +18,9 @@
       <template v-if=rh1>
         <p>RH1 Download Options</p>
         <b-form-group label="Save downloaded tracks as:">
-          <b-form-radio v-model="downloadFormat" name="wav" value="WAV">WAV</b-form-radio>
-          <b-form-radio v-model="downloadFormat" name="flac" value="FLAC">FLAC</b-form-radio>
-          <b-form-radio v-model="downloadFormat" name="mp3" value="MP3">MP3 (320kbs)</b-form-radio>
+          <b-form-radio v-model="downloadFormat" name="WAV" value="WAV">WAV</b-form-radio>
+          <b-form-radio v-model="downloadFormat" name="FLAC" value="FLAC">FLAC</b-form-radio>
+          <b-form-radio v-model="downloadFormat" name="MP3" value="MP3">MP3 (320kbs)</b-form-radio>
         </b-form-group>
         <p>Download directory: {{ downloadDir }}</p>
         <b-button variant="outline-primary" @click="chooseDownloadDir">Browse <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
@@ -70,7 +70,7 @@
         titleFormat: '%title% - %artist%',
         sonicStageNosStrip: true,
         rh1: false,
-        downloadFormat: 'wav',
+        downloadFormat: 'FLAC',
         downloadDir: homedir + '/pmd-music/'
       }
     },

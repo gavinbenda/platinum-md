@@ -19,7 +19,6 @@
           <b-col cols="1">
             <b-button variant="outline-light" @click="readNetMd" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
           </b-col>
-          <p>{{ downloadDir }} {{ downloadFormat }}</p>
           <b-col>
             <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
             <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }} <font-awesome-icon icon="edit"></font-awesome-icon></a></b-badge>
@@ -140,7 +139,7 @@ export default {
       showOverlay: true,
       communicating: false,
       downloadDir: homedir + '/pmd-music/',
-      downloadFormat: 'flac',
+      downloadFormat: 'FLAC',
       rh1: false,
       progress: 'Idle'
     }
@@ -227,6 +226,7 @@ export default {
               return jsonData.tracks[key]
             })
             this.tracks = results
+            console.log(results)
             // This is an awful check, that I hate.
             // Ensure 'sane' data comes back before resolving
             if ((this.info.recordedTime !== '00:00:00.00' && this.tracks.length === 0) || (this.info.recordedTime === '00:00:00.00' && this.info.availableTime === '00:00:00.00')) {
@@ -241,7 +241,6 @@ export default {
           }
         })
         // if RH1, show button. VID/PID taken from libnetmd/netmd_dev.c {0x54c, 0x286}
-        console.log(usbDetect.find(0x54c, 0x286))
         usbDetect.find(0x54c, 0x286, function (err, devices) {
           if (err) {
             console.log(err)
@@ -418,9 +417,9 @@ export default {
       */
     download: function () {
       bus.$emit('netmd-status', { eventType: 'busy' })
-      console.log('this.downloadFormat download ' + this.downloadFormat)
       var trackno = this.selected[0].no + 1
       let downloadFile = ''
+      let downloadFormat = this.downloadFormat
       console.log('Downloading track from device: ' + trackno)
       bus.$emit('netmd-status', { progress: 'Downloading track ' + trackno })
       let options = {
@@ -438,7 +437,6 @@ export default {
         // TODO: notify user could not create download dir
         console.error(err)
       }
-      console.log('this.downloadFormat download ' + this.downloadFormat.toLowerCase())
       var pyshell = new PythonShell('upload.py', options, function (err, results) {
         if (err) throw err
       })
@@ -455,13 +453,11 @@ export default {
       // end the input stream and allow the process to exit
       pyshell.end(function (err) {
         if (err) throw err
-        console.log('this.downloadFormat download pyshell end ' + this.downloadFormat.toLowerCase())
         console.log('Finished pythonshell download of track ' + trackno)
         bus.$emit('netmd-status', { progress: 'Idle' })
-        console.log(this.downloadFormat)
-        var outputFile = downloadFile.toString().replace('.aea', this.downloadFormat.toLowerCase())
+        var outputFile = downloadFile.toString().replace('.aea', '.' + downloadFormat.toLowerCase())
         return new Promise(async (resolve, reject) => {
-          await convertToWav(downloadFile, outputFile, this.downloadFormat)
+          await convertToWav(downloadFile, outputFile, downloadFormat)
           resolve((del.sync([downloadFile], {force: true})))
         })
       })

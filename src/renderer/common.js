@@ -14,10 +14,10 @@ export async function convertToWav (source, dest, format) {
     console.log('Starting WAV conversion process using ffmpeg: ' + source + ' --> ' + dest)
     switch (format) {
       case ('FLAC'):
-        codec = ['-acodec', 'pcm_s16le']
+        codec = ['-acodec', 'flac']
         break
       case ('MP3'):
-        codec = ['-acodec', 'mp3']
+        codec = ['-acodec', 'mp3', '-b:a', '320k']
         break
     }
     ffmpeg(source)
