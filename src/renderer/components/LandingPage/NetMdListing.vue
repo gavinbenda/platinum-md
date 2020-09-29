@@ -40,7 +40,7 @@
       <b-table
         selectable
         striped
-        select-mode="single"
+        select-mode="range"
         selectedVariant="success"
         :items="tracks"
         :fields="fields"
@@ -111,7 +111,7 @@
 <script>
 import bus from '@/bus'
 import { uploadPyPath, netmdcliPath } from '@/binaries'
-import { convertToWav, ensureDirSync } from '@/common'
+import { convertAudio, ensureDirSync } from '@/common'
 import { PythonShell } from 'python-shell'
 const usbDetect = require('usb-detection')
 const homedir = require('os').homedir()
@@ -415,50 +415,77 @@ export default {
     /**
       * Download selected track from player and convert.
       */
-    download: function () {
+    download: async function () {
+      // if button is clicked but nothing is selected, do nothing
+      if (this.selected.length < 1) return
       bus.$emit('netmd-status', { eventType: 'busy' })
-      var trackno = this.selected[0].no + 1
-      let downloadFile = ''
-      let downloadFormat = this.downloadFormat
-      console.log('Downloading track from device: ' + trackno)
-      bus.$emit('netmd-status', { progress: 'Downloading track ' + trackno })
-      let options = {
-        mode: 'text',
-        pythonOptions: ['-u'],
-        pythonPath: 'python2',
-        scriptPath: uploadPyPath,
-        args: ['-s', '-t', trackno, '-o', this.downloadDir]
-      }
-      // Check or Create temp directory
-      try {
-        ensureDirSync(this.downloadDir)
-        console.log('Download directory created')
-      } catch (err) {
-        // TODO: notify user could not create download dir
-        console.error(err)
-      }
-      var pyshell = new PythonShell('upload.py', options, function (err, results) {
-        if (err) throw err
+      // local copy of selected, otherwise this is undefined by the second iteration of the loop
+      var selectedTracks
+      await new Promise(async (resolve, reject) => {
+        selectedTracks = JSON.parse(JSON.stringify(this.selected))
+        resolve()
       })
-      pyshell.on('message', function (message) {
-        // received a message sent from the Python script (a simple "print" statement)
-        if (message.match(/^Done:/)) {
-          bus.$emit('netmd-status', { progress: 'Downloading track ' + trackno + ' - ' + message.split(' ')[2].replace(/\(/, '').replace(/\)/, '') })
+      for (var i = 0, len = selectedTracks.length; i < len; i++) {
+        var trackno = selectedTracks[i].no + 1
+        console.log('Downloading track from device: ' + trackno)
+        if (selectedTracks.length === 1) {
+          bus.$emit('netmd-status', { progress: 'Downloading track ' + trackno })
+        } else {
+          bus.$emit('netmd-status', { progress: 'Downloading track ' + trackno + ' of ' + selectedTracks.length })
         }
-        if (message.match(/^Wrote:/)) {
-          downloadFile = message.split(' ').slice(1).join(' ')
-          console.log('Download file: ' + downloadFile)
+        // Check or Create temp directory
+        try {
+          ensureDirSync(this.downloadDir)
+          console.log('Download directory created')
+        } catch (err) {
+          // TODO: notify user could not create download dir
+          console.error(err)
         }
-      })
-      // end the input stream and allow the process to exit
-      pyshell.end(function (err) {
-        if (err) throw err
-        console.log('Finished pythonshell download of track ' + trackno)
-        bus.$emit('netmd-status', { progress: 'Idle' })
-        var outputFile = downloadFile.toString().replace('.aea', '.' + downloadFormat.toLowerCase())
-        return new Promise(async (resolve, reject) => {
-          await convertToWav(downloadFile, outputFile, downloadFormat)
+        const downloadFile = await this.fetchTrack(trackno)
+        // timeout to avoid python errors when pulling multiple tracks
+        await new Promise(async (resolve, reject) => setTimeout(resolve, 3000))
+        console.log('downloadFile ' + downloadFile)
+
+        let promise = new Promise(async (resolve, reject) => {
+          let outputFile = downloadFile.toString().replace(downloadFile.split('.').pop(), this.downloadFormat.toLowerCase())
+          await convertAudio(downloadFile, outputFile, this.downloadFormat)
           resolve((del.sync([downloadFile], {force: true})))
+        })
+        promise.finally()
+      }
+      bus.$emit('netmd-status', { progress: 'Idle' })
+    },
+    /**
+      * Fetch track from rh1
+      */
+    fetchTrack: async function (trackNo) {
+      return new Promise(async (resolve, reject) => {
+        let downloadFile = ''
+        let options = {
+          mode: 'text',
+          pythonOptions: ['-u'],
+          pythonPath: 'python2',
+          scriptPath: uploadPyPath,
+          args: ['-s', '-t', trackNo, '-o', this.downloadDir]
+        }
+        var pyshell = new PythonShell('upload.py', options, function (err, results) {
+          if (err) throw err
+        })
+        pyshell.on('message', function (message) {
+          // received a message sent from the Python script (a simple "print" statement)
+          if (message.match(/^Done:/)) {
+            bus.$emit('netmd-status', { progress: 'Downloading track ' + trackNo + ' - ' + message.split(' ')[2].replace(/\(/, '').replace(/\)/, '') })
+          }
+          if (message.match(/^Wrote:/)) {
+            downloadFile = message.split(' ').slice(1).join(' ')
+            console.log('Download file: ' + downloadFile)
+          }
+        })
+        // end the input stream and allow the process to exit
+        pyshell.end(function (err) {
+          if (err) throw err
+          console.log('Finished pythonshell download of track ' + trackNo)
+          resolve(downloadFile)
         })
       })
     },

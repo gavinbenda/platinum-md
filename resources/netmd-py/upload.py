@@ -135,7 +135,7 @@ def MDDump(md_iface, track_range, output_path, sonicstage_nos):
         if codec == libnetmd.ENCODING_SP:
             extension = 'aea'
         else:
-            extension = 'wav'
+            extension = 'at3'
         if sonicstage_nos:
             # write track numbers in the same format as when uploading from sonicstage
             filename = '%s/%03i-%s.%s' % (directory, track + 1, ''.join(c for c in title if c in valid_chars), extension)

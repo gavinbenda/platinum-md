@@ -94,7 +94,7 @@
 <script>
 import bus from '@/bus'
 import { atracdencPath, netmdcliPath } from '@/binaries'
-import { convertToWav, ensureDirSync } from '@/common'
+import { convertAudio, ensureDirSync } from '@/common'
 import clone from 'lodash/clone'
 import os from 'os'
 import path from 'path'
@@ -293,7 +293,7 @@ export default {
         console.log('Starting conversion in <' + this.conversionMode + '> mode')
         if (this.conversionMode === 'SP') {
           this.progress = 'Converting to Wav'
-          await convertToWav(sourceFile, finalFile, fileExtension)
+          await convertAudio(sourceFile, finalFile, fileExtension)
         // uploading as LP2
         // This uses an experimental ATRAC3 encoder
         // The files are converted into ATRAC locally, and then sent to the NetMD device
@@ -307,7 +307,7 @@ export default {
               this.bitrate = 64
               break
           }
-          await convertToWav(sourceFile, destFile)
+          await convertAudio(sourceFile, destFile)
           await self.convertToAtrac(destFile, atracFile)
           await self.convertToWavWrapper(atracFile, finalFile)
         }
