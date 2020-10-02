@@ -110,9 +110,11 @@
 
 <script>
 import bus from '@/bus'
-import { uploadPyPath, netmdcliPath } from '@/binaries'
+import { platform, uploadPyPath, netmdcliPath } from '@/binaries'
 import { convertAudio, ensureDirSync } from '@/common'
 import { PythonShell } from 'python-shell'
+import path from 'path'
+const fs = require('fs-extra')
 const usbDetect = require('usb-detection')
 const homedir = require('os').homedir()
 const del = require('del')
@@ -447,11 +449,22 @@ export default {
         console.log('downloadFile ' + downloadFile)
 
         let promise = new Promise(async (resolve, reject) => {
-          let outputFile = downloadFile.toString().replace(downloadFile.split('.').pop(), this.downloadFormat.toLowerCase())
-          await convertAudio(downloadFile, outputFile, this.downloadFormat)
-          resolve((del.sync([downloadFile], {force: true})))
+          if (downloadFile !== '') {
+            let outputFile = downloadFile.toString().replace(downloadFile.split('.').pop(), this.downloadFormat.toLowerCase())
+            await convertAudio(downloadFile, outputFile, this.downloadFormat)
+            resolve((del.sync([downloadFile], {force: true})))
+          }
         })
         promise.finally()
+      }
+      if (platform === 'win') {
+        bus.$emit('netmd-status', { progress: 'Converting downloaded tracks to ' + this.downloadFormat })
+        let promise = new Promise(async (resolve, reject) => {
+          // python-shell on windows doesnt output the download dir, so the above fails, instead batch convert flacs
+          await this.batchConvert()
+          resolve()
+        })
+        promise.finally(bus.$emit('netmd-status', { progress: 'Idle' }))
       }
       bus.$emit('netmd-status', { progress: 'Idle' })
     },
@@ -487,6 +500,36 @@ export default {
           console.log('Finished pythonshell download of track ' + trackNo)
           resolve(downloadFile)
         })
+      })
+    },
+    /*
+     * Dirty hack to get around python-shell on windows failing to capture progress/success and therefor not returning the filename to input to ffmpeg
+     */
+    batchConvert: async function () {
+      console.log('downloaddir = ' + this.downloadDir)
+      let downloadPath = ''
+      if (this.info.title !== '<Untitled>') {
+        downloadPath = this.downloadDir + this.info.title
+      } else {
+        downloadPath = this.downloadDir
+      }
+      fs.readdir(downloadPath, (err, dir) => {
+        if (err) throw err
+        // loop through results
+        for (let filePath of dir) {
+          // ensure that we're only working with files
+          let downloadFile = downloadPath + '/' + filePath
+          if (fs.statSync(downloadFile).isFile()) {
+            if (path.extname(filePath) === '.at3' || path.extname(filePath) === '.aea') {
+              let promise = new Promise(async (resolve, reject) => {
+                let outputFile = downloadFile.toString().replace(downloadFile.split('.').pop(), this.downloadFormat.toLowerCase())
+                await convertAudio(downloadFile, outputFile, this.downloadFormat)
+                resolve((del.sync([downloadFile], {force: true})))
+              })
+              promise.finally()
+            }
+          }
+        }
       })
     },
     /**
