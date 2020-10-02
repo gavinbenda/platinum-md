@@ -26,7 +26,7 @@
             <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
           </b-col>
           <b-col class="text-right">
-            <b-button variant="success" @click="download" v-show=rh1 :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
+            <b-button variant="success" @click="download" v-show=true :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
             <b-button variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
             <b-dropdown class="danger my-0 py-0">
                 <b-dropdown-item>
@@ -466,6 +466,7 @@ export default {
         })
         promise.finally(bus.$emit('netmd-status', { progress: 'Idle' }))
       }
+      this.readNetMd()
       bus.$emit('netmd-status', { progress: 'Idle' })
     },
     /**
