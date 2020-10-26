@@ -21,6 +21,7 @@
           <b-form-radio v-model="downloadFormat" name="WAV" value="WAV">WAV</b-form-radio>
           <b-form-radio v-model="downloadFormat" name="FLAC" value="FLAC">FLAC</b-form-radio>
           <b-form-radio v-model="downloadFormat" name="MP3" value="MP3">MP3 (320kbs)</b-form-radio>
+          <b-form-radio v-model="downloadFormat" name="RAW" value="RAW">AEA/AT3 (Do not convert audio)</b-form-radio>
         </b-form-group>
         <p>Download directory: {{ downloadDir }}</p>
         <b-button variant="outline-primary" @click="chooseDownloadDir">Browse <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>

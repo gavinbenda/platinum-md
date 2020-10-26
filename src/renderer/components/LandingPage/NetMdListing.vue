@@ -26,7 +26,7 @@
             <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
           </b-col>
           <b-col class="text-right">
-            <b-button variant="success" @click="download" v-show=true :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
+            <b-button variant="success" @click="download" v-show=rh1 :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
             <b-button variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
             <b-dropdown class="danger my-0 py-0">
                 <b-dropdown-item>
@@ -449,7 +449,7 @@ export default {
         console.log('downloadFile ' + downloadFile)
 
         let promise = new Promise(async (resolve, reject) => {
-          if (downloadFile !== '') {
+          if (downloadFile !== '' && this.downloadFormat !== 'RAW') {
             let outputFile = downloadFile.toString().replace(downloadFile.split('.').pop(), this.downloadFormat.toLowerCase())
             await convertAudio(downloadFile, outputFile, this.downloadFormat)
             resolve((del.sync([downloadFile], {force: true})))
@@ -457,7 +457,7 @@ export default {
         })
         promise.finally()
       }
-      if (platform === 'win') {
+      if (platform === 'win' && this.downloadFormat !== 'RAW') {
         bus.$emit('netmd-status', { progress: 'Converting downloaded tracks to ' + this.downloadFormat })
         let promise = new Promise(async (resolve, reject) => {
           // python-shell on windows doesnt output the download dir, so the above fails, instead batch convert flacs
