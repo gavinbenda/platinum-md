@@ -443,7 +443,7 @@ export default {
           // TODO: notify user could not create download dir
           console.error(err)
         }
-        const downloadFile = await this.fetchTrack(trackno)
+        const downloadFile = await this.fetchTrack(trackno, selectedTracks[i].name, selectedTracks[i].bitrate)
         // timeout to avoid python errors when pulling multiple tracks
         await new Promise(async (resolve, reject) => setTimeout(resolve, 3000))
         console.log('downloadFile ' + downloadFile)
@@ -472,7 +472,7 @@ export default {
     /**
       * Fetch track from rh1
       */
-    fetchTrack: async function (trackNo) {
+    fetchTrackPy: async function (trackNo) {
       return new Promise(async (resolve, reject) => {
         let downloadFile = ''
         let options = {
@@ -500,6 +500,33 @@ export default {
           if (err) throw err
           console.log('Finished pythonshell download of track ' + trackNo)
           resolve(downloadFile)
+        })
+      })
+    },
+    /**
+      * Fetch track from rh1
+      */
+    fetchTrack: async function (trackNo, trackName, trackFormat) {
+      return new Promise(async (resolve, reject) => {
+        let extension = (trackFormat === 'SP') ? '.aea' : '.at3'
+        let downloadFile = this.downloadDir + trackName + extension
+        console.log('download file ' + downloadFile + 'track format: ' + trackFormat)
+        let netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'recv', trackNo, downloadFile])
+        netmdcli.on('close', (code) => {
+          if (code === 0) {
+            console.log('Finished fetchtrack download of track ' + trackNo)
+            resolve(downloadFile)
+          } else {
+            console.log('netmdcli error, returned ' + code)
+            reject(code)
+          }
+        })
+        netmdcli.stdout.on('data', data => {
+          var message = data.toString()
+          console.log(message)
+          if (message.match(/^Done:/)) {
+            bus.$emit('netmd-status', { progress: 'Downloading track ' + trackNo + ' - ' + message })
+          }
         })
       })
     },
