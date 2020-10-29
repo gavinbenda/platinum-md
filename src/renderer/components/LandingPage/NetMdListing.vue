@@ -73,7 +73,7 @@
 
         <template v-slot:cell(formatted)="data">
           <div class="text-right" v-if="!isBusy">
-            <b-badge variant="primary" class="text-uppercase">{{ data.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase"><span v-if="data.item.bitrate != 'LP2' && data.item.bitrate != 'LP4'">SP / </span> -</b-badge>
+            <b-badge variant="primary" class="text-uppercase">{{ data.item.format }}</b-badge> <b-badge variant="secondary" class="text-uppercase">{{ data.item.bitrate }}</b-badge>
             <span v-if="data.item.format == 'TrPROT'"><font-awesome-icon icon="lock"></font-awesome-icon></span><span v-else><font-awesome-icon icon="lock-open"></font-awesome-icon></span>
           </div>
         </template>
@@ -110,11 +110,8 @@
 
 <script>
 import bus from '@/bus'
-import { platform, uploadPyPath, netmdcliPath } from '@/binaries'
+import { netmdcliPath } from '@/binaries'
 import { convertAudio, ensureDirSync } from '@/common'
-import { PythonShell } from 'python-shell'
-import path from 'path'
-const fs = require('fs-extra')
 const usbDetect = require('usb-detection')
 const homedir = require('os').homedir()
 const del = require('del')
@@ -143,6 +140,7 @@ export default {
       downloadDir: homedir + '/pmd-music/',
       downloadFormat: 'FLAC',
       rh1: false,
+      useSonicStageNos: true,
       progress: 'Idle'
     }
   },
@@ -423,10 +421,24 @@ export default {
       bus.$emit('netmd-status', { eventType: 'busy' })
       // local copy of selected, otherwise this is undefined by the second iteration of the loop
       var selectedTracks
+      var downloadPath = this.downloadDir
       await new Promise(async (resolve, reject) => {
         selectedTracks = JSON.parse(JSON.stringify(this.selected))
         resolve()
       })
+      // Check or Create temp directory
+      try {
+        if (this.info.title !== '<Untitled>') {
+          downloadPath = this.downloadDir + this.info.title
+        }
+        ensureDirSync(downloadPath)
+        console.log('Download directory created')
+      } catch (err) {
+        // TODO: notify user could not create download dir
+        console.log('Could not create download directory')
+        console.error(err)
+      }
+
       for (var i = 0, len = selectedTracks.length; i < len; i++) {
         var trackno = selectedTracks[i].no + 1
         console.log('Downloading track from device: ' + trackno)
@@ -435,20 +447,13 @@ export default {
         } else {
           bus.$emit('netmd-status', { progress: 'Downloading track ' + trackno + ' of ' + selectedTracks.length })
         }
-        // Check or Create temp directory
-        try {
-          ensureDirSync(this.downloadDir)
-          console.log('Download directory created')
-        } catch (err) {
-          // TODO: notify user could not create download dir
-          console.error(err)
-        }
-        const downloadFile = await this.fetchTrack(trackno, selectedTracks[i].name, selectedTracks[i].bitrate)
+        const downloadFile = await this.fetchTrack(downloadPath, trackno, selectedTracks[i].name, selectedTracks[i].bitrate)
         // timeout to avoid python errors when pulling multiple tracks
         await new Promise(async (resolve, reject) => setTimeout(resolve, 3000))
-        console.log('downloadFile ' + downloadFile)
 
+        // convert to selected audio format
         let promise = new Promise(async (resolve, reject) => {
+          console.log('Converting downloadFile: ' + downloadFile)
           if (downloadFile !== '' && this.downloadFormat !== 'RAW') {
             let outputFile = downloadFile.toString().replace(downloadFile.split('.').pop(), this.downloadFormat.toLowerCase())
             await convertAudio(downloadFile, outputFile, this.downloadFormat)
@@ -457,60 +462,23 @@ export default {
         })
         promise.finally()
       }
-      if (platform === 'win' && this.downloadFormat !== 'RAW') {
-        bus.$emit('netmd-status', { progress: 'Converting downloaded tracks to ' + this.downloadFormat })
-        let promise = new Promise(async (resolve, reject) => {
-          // python-shell on windows doesnt output the download dir, so the above fails, instead batch convert flacs
-          await this.batchConvert()
-          resolve()
-        })
-        promise.finally(bus.$emit('netmd-status', { progress: 'Idle' }))
-      }
+
       this.readNetMd()
       bus.$emit('netmd-status', { progress: 'Idle' })
     },
     /**
       * Fetch track from rh1
       */
-    fetchTrackPy: async function (trackNo) {
-      return new Promise(async (resolve, reject) => {
-        let downloadFile = ''
-        let options = {
-          mode: 'text',
-          pythonOptions: ['-u'],
-          pythonPath: 'python2',
-          scriptPath: uploadPyPath,
-          args: ['-s', '-t', trackNo, '-o', this.downloadDir]
-        }
-        var pyshell = new PythonShell('upload.py', options, function (err, results) {
-          if (err) throw err
-        })
-        pyshell.on('message', function (message) {
-          // received a message sent from the Python script (a simple "print" statement)
-          if (message.match(/^Done:/)) {
-            bus.$emit('netmd-status', { progress: 'Downloading track ' + trackNo + ' - ' + message.split(' ')[2].replace(/\(/, '').replace(/\)/, '') })
-          }
-          if (message.match(/^Wrote:/)) {
-            downloadFile = message.split(' ').slice(1).join(' ')
-            console.log('Download file: ' + downloadFile)
-          }
-        })
-        // end the input stream and allow the process to exit
-        pyshell.end(function (err) {
-          if (err) throw err
-          console.log('Finished pythonshell download of track ' + trackNo)
-          resolve(downloadFile)
-        })
-      })
-    },
-    /**
-      * Fetch track from rh1
-      */
-    fetchTrack: async function (trackNo, trackName, trackFormat) {
+    fetchTrack: async function (downloadPath, trackNo, trackName, trackFormat) {
       return new Promise(async (resolve, reject) => {
         let extension = (trackFormat === 'SP') ? '.aea' : '.at3'
-        let downloadFile = this.downloadDir + trackName + extension
-        console.log('download file ' + downloadFile + 'track format: ' + trackFormat)
+        let downloadFile = downloadPath + '/'
+        if (this.useSonicStageNos) {
+          downloadFile += `00${trackNo}`.slice(-3) + '-' + trackName + extension
+        } else {
+          downloadFile += trackName + extension
+        }
+        console.log('download file ' + downloadFile + ' track format: ' + trackFormat)
         let netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'recv', trackNo, downloadFile])
         netmdcli.on('close', (code) => {
           if (code === 0) {
@@ -523,41 +491,10 @@ export default {
         })
         netmdcli.stdout.on('data', data => {
           var message = data.toString()
-          console.log(message)
-          if (message.match(/^Done:/)) {
+          if (message.match(/\d\d\.\d/)) {
             bus.$emit('netmd-status', { progress: 'Downloading track ' + trackNo + ' - ' + message })
           }
         })
-      })
-    },
-    /*
-     * Dirty hack to get around python-shell on windows failing to capture progress/success and therefor not returning the filename to input to ffmpeg
-     */
-    batchConvert: async function () {
-      console.log('downloaddir = ' + this.downloadDir)
-      let downloadPath = ''
-      if (this.info.title !== '<Untitled>') {
-        downloadPath = this.downloadDir + this.info.title
-      } else {
-        downloadPath = this.downloadDir
-      }
-      fs.readdir(downloadPath, (err, dir) => {
-        if (err) throw err
-        // loop through results
-        for (let filePath of dir) {
-          // ensure that we're only working with files
-          let downloadFile = downloadPath + '/' + filePath
-          if (fs.statSync(downloadFile).isFile()) {
-            if (path.extname(filePath) === '.at3' || path.extname(filePath) === '.aea') {
-              let promise = new Promise(async (resolve, reject) => {
-                let outputFile = downloadFile.toString().replace(downloadFile.split('.').pop(), this.downloadFormat.toLowerCase())
-                await convertAudio(downloadFile, outputFile, this.downloadFormat)
-                resolve((del.sync([downloadFile], {force: true})))
-              })
-              promise.finally()
-            }
-          }
-        }
       })
     },
     /**
@@ -570,6 +507,9 @@ export default {
       if (store.has('downloadFormat')) {
         this.downloadFormat = store.get('downloadFormat')
         console.log('this.downloadFormat ' + this.downloadFormat)
+      }
+      if (store.has('useSonicStageNos')) {
+        this.useSonicStageNos = store.get('useSonicStageNos')
       }
     }
   }
