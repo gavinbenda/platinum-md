@@ -15,6 +15,21 @@
       <hr />
       <b-form-checkbox type="checkbox" name="sonicstage-titles" id="sonicstage-titles" v-model="sonicStageNosStrip">Strip SonicStage track numbers from titles (e.g 001-Title)</b-form-checkbox>
       <hr />
+      <template v-if=rh1>
+        <b>RH1 Download Options</b>
+        <b-form-group label="Save downloaded tracks as:">
+          <b-form-radio v-model="downloadFormat" name="WAV" value="WAV">WAV</b-form-radio>
+          <b-form-radio v-model="downloadFormat" name="FLAC" value="FLAC">FLAC</b-form-radio>
+          <b-form-radio v-model="downloadFormat" name="MP3" value="MP3">MP3 (320kbs)</b-form-radio>
+          <b-form-radio v-model="downloadFormat" name="RAW" value="RAW">AEA/AT3 (Do not convert audio)</b-form-radio>
+        </b-form-group>
+        <b-form-checkbox type="checkbox" name="use-sonicstage-nos" id="use-sonicstage-nos" v-model="useSonicStageNos">Save tracks with SonicStage style track numbers (e.g 001-Title)</b-form-checkbox>
+        <br>
+        <p>Download directory: {{ downloadDir }}</p>
+        <b-button variant="outline-primary" @click="chooseDownloadDir">Browse <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
+        <hr />
+      </template>
+
       <b-button variant="outline-primary" @click="showDebugConsole">Debug Window</b-button>
     </b-modal>
 
@@ -44,7 +59,9 @@
   import DirectoryListing from './LandingPage/DirectoryListing'
   import NetMdListing from './LandingPage/NetMdListing'
   import ControlBar from './LandingPage/ControlBar'
+  import path from 'path'
   const { remote } = require('electron')
+  const homedir = require('os').homedir()
   const Store = require('electron-store')
   const store = new Store()
   export default {
@@ -54,11 +71,22 @@
       return {
         conversionMode: 'SP',
         titleFormat: '%title% - %artist%',
-        sonicStageNosStrip: true
+        sonicStageNosStrip: true,
+        useSonicStageNos: true,
+        rh1: false,
+        downloadFormat: 'FLAC',
+        downloadDir: homedir + '/pmd-music/'
       }
     },
     created () {
       this.readConfig()
+    },
+    mounted () {
+      bus.$on('netmd-status', (data) => {
+        if ('deviceName' in data) {
+          this.rh1 = (data.deviceName === 'Sony MZ-RH1')
+        }
+      })
     },
     methods: {
       /**
@@ -74,6 +102,9 @@
         store.set('conversionMode', this.conversionMode)
         store.set('titleFormat', this.titleFormat)
         store.set('sonicStageNosStrip', this.sonicStageNosStrip)
+        store.set('useSonicStageNos', this.useSonicStageNos)
+        store.set('downloadFormat', this.downloadFormat)
+        store.set('downloadDir', this.downloadDir)
         bus.$emit('config-update')
       },
       /**
@@ -89,12 +120,33 @@
         if (store.has('sonicStageNosStrip')) {
           this.sonicStageNosStrip = store.get('sonicStageNosStrip')
         }
+        if (store.has('useSonicStageNos')) {
+          this.useSonicStageNos = store.get('useSonicStageNos')
+        }
+        if (store.has('downloadFormat')) {
+          this.downloadFormat = store.get('downloadFormat')
+        }
+        if (store.has('downloadDir')) {
+          this.downloadFormat = store.get('downloadDir')
+        }
       },
       /**
         * Show debug console
         */
       showDebugConsole: function () {
         remote.getCurrentWindow().webContents.openDevTools()
+      },
+      chooseDownloadDir: function () {
+        remote.dialog.showOpenDialog({
+          properties: ['openDirectory'],
+          defaultPath: this.downloadDir
+        }, names => {
+          if (names != null) {
+            console.log('selected download directory:' + names[0])
+            store.set('downloadDir', names[0] + path.sep)
+            this.downloadDir = store.get('downloadDir')
+          }
+        })
       }
     }
   }

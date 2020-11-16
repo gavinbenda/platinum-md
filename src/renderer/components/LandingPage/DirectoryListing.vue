@@ -34,6 +34,7 @@
           <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
         </b-col>
         <b-col>
+          {{ this.dir }}<br />
           <b>{{ selected.length }}</b> tracks selected {{ conversionMode }}<br />
           <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
         </b-col>
@@ -93,6 +94,7 @@
 <script>
 import bus from '@/bus'
 import { atracdencPath, netmdcliPath } from '@/binaries'
+import { convertAudio, ensureDirSync } from '@/common'
 import clone from 'lodash/clone'
 import os from 'os'
 import path from 'path'
@@ -147,11 +149,13 @@ export default {
       this.readConfig()
     })
     bus.$on('netmd-status', (data) => {
-      console.log(data.eventType)
-      if (data.eventType === 'busy' || data.eventType === 'no-connection') {
-        this.isBusy = true
-      } else {
-        this.isBusy = false
+      if ('eventType' in data) {
+        console.log(data.eventType)
+        if (data.eventType === 'busy' || data.eventType === 'no-connection') {
+          this.isBusy = true
+        } else {
+          this.isBusy = false
+        }
       }
     })
   },
@@ -253,8 +257,8 @@ export default {
         var fileName = this.selected[i].fileName
         // Check or Create temp directory
         try {
-          this.ensureDirSync(this.dir + this.tempDirectory)
-          console.log('Directory created')
+          ensureDirSync(this.dir + this.tempDirectory)
+          console.log('Directory created' + this.dir + this.tempDirectory)
         } catch (err) {
           console.error(err)
         }
@@ -288,57 +292,26 @@ export default {
         // The encoding process is handled by the NetMD device
         console.log('Starting conversion in <' + this.conversionMode + '> mode')
         if (this.conversionMode === 'SP') {
-          await self.convertToWav(sourceFile, finalFile, fileExtension)
+          this.progress = 'Converting to Wav'
+          await convertAudio(sourceFile, finalFile, fileExtension)
         // uploading as LP2
         // This uses an experimental ATRAC3 encoder
         // The files are converted into ATRAC locally, and then sent to the NetMD device
         } else {
-          await self.convertToWav(sourceFile, destFile, fileExtension)
+          // check the filetype, and choose the output
+          switch (this.conversionMode) {
+            case 'LP2':
+              this.bitrate = 128
+              break
+            case 'LP4':
+              this.bitrate = 64
+              break
+          }
+          await convertAudio(sourceFile, destFile)
           await self.convertToAtrac(destFile, atracFile)
           await self.convertToWavWrapper(atracFile, finalFile)
         }
         resolve(finalFile)
-      })
-    },
-    /**
-      * Convert input audio file to WAV file using ffmpeg
-      * This MUST be 44100 and 16bit for the atrac encoder to work
-      */
-    convertToWav: async function (source, dest, conversionMode) {
-      this.progress = 'Converting to Wav'
-      return new Promise(async (resolve, reject) => {
-        // check the filetype, and choose the output
-        switch (this.conversionMode) {
-          case 'LP2':
-            this.bitrate = 128
-            break
-          case 'LP4':
-            this.bitrate = 64
-            break
-        }
-        // Start conversion
-        console.log('Starting WAV conversion process using ffmpeg: ' + source + ' --> ' + dest)
-        ffmpeg(source)
-          .output(dest)
-          .outputOption(['-acodec', 'pcm_s16le'])
-          .audioFrequency(44100)
-          .on('start', function (commandLine) {
-            console.log('Spawned Ffmpeg with command: ', commandLine)
-          })
-          .on('progress', function (progress) {
-            console.log('Processing: ' + progress.timemark + ' done ' + progress.targetSize + ' kilobytes')
-          })
-          // If successful, resolve
-          .on('end', function () {
-            console.log('ffmpeg completed successfully')
-            resolve()
-          })
-          // Reject if we get any errors
-          .on('error', function (err) {
-            console.log('ffmpeg error: ' + err.message)
-            reject(err.message)
-          })
-          .run()
       })
     },
     /**
@@ -429,6 +402,7 @@ export default {
             reject(code)
           }
           this.progress = 'Idle'
+          bus.$emit('netmd-status', { progress: 'Idle' })
         })
         netmdcli.on('error', (error) => {
           console.log(`netmdcli send errored with error ${error}`)
@@ -440,6 +414,7 @@ export default {
           console.log(output)
           if (output.includes('%) transferred')) {
             this.progress = 'Transferring ' + output.split('bytes (').pop().split(') transferred')[0]
+            bus.$emit('netmd-status', { progress: 'Receiving ' + trackTitle })
           }
         })
       })
@@ -460,16 +435,6 @@ export default {
       this.selectedTrackSource.trackNo = this.selectedTrack.trackNo
       this.selectedTrackSource.title = this.selectedTrack.title
       this.selectedTrackSource.artist = this.selectedTrack.artist
-    },
-    /**
-      * Make sure temp directory actually exists, if not create it
-      */
-    ensureDirSync: function (dirpath) {
-      try {
-        fs.mkdirSync(dirpath, { recursive: true })
-      } catch (err) {
-        if (err.code !== 'EEXIST') throw err
-      }
     },
     /**
       * Read-in config file
