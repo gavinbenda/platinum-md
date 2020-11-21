@@ -2,7 +2,16 @@
   <div id="wrapper" class="p-3">
 
     <b-modal @ok="saveSettings" ref="settings-modal" title="Settings">
-      <b-form-group label="Transfer Mode:">
+      <b-form-group label="Mode:">
+        <b-form-radio v-model="himd" name="mode-md" value=false>MD</b-form-radio>
+        <b-form-radio v-model="himd" name="mode-himd" value=true>Hi-MD</b-form-radio>
+      </b-form-group>
+      <hr />
+      <b-form-group v-if=himd>
+        <p>HiMD Path: {{ himdPath }}</p>
+        <b-button variant="outline-primary" @click="chooseHiMDPath">Browse <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
+      </b-form-group>
+      <b-form-group v-else label="Transfer Mode:">
         <b-form-radio v-model="conversionMode" name="mode-sp" value="SP">SP (Best quality)</b-form-radio>
         <b-form-radio v-model="conversionMode" name="mode-lp2" value="LP2">LP2 (Acceptable Quality)</b-form-radio>
         <b-form-radio v-model="conversionMode" name="mode-lp4" value="LP4">LP4 (Lower Quality)</b-form-radio>
@@ -36,7 +45,8 @@
     <b-container fluid>
       <b-row>
         <b-col cols="6"><img id="logo" src="~@/assets/logo.svg" alt="Platinum MD" class="p-3"></b-col>
-        <b-col class="text-center"><control-bar></control-bar></b-col>
+        <p><b>Experimental deenine Hi-MD Build 0.0.1</b></p>
+        <b-col v-if="himd === false" class="text-center"><control-bar></control-bar></b-col>
         <b-col class="text-right p-3"><b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button></b-col>
       </b-row>
     </b-container>
@@ -74,8 +84,10 @@
         sonicStageNosStrip: true,
         useSonicStageNos: true,
         rh1: false,
+        himd: false,
         downloadFormat: 'FLAC',
-        downloadDir: homedir + '/pmd-music/'
+        downloadDir: homedir + '/pmd-music/',
+        himdPath: '/Users/Doug/workspace/linux-minidisc/testdata/himd/'
       }
     },
     created () {
@@ -99,12 +111,18 @@
         * Save settings to store
         */
       saveSettings: function () {
-        store.set('conversionMode', this.conversionMode)
+        store.set('himd', this.himd)
+        if (this.himd) {
+          store.set('conversionMode', 'MP3')
+        } else {
+          store.set('conversionMode', this.conversionMode)
+        }
         store.set('titleFormat', this.titleFormat)
         store.set('sonicStageNosStrip', this.sonicStageNosStrip)
         store.set('useSonicStageNos', this.useSonicStageNos)
         store.set('downloadFormat', this.downloadFormat)
         store.set('downloadDir', this.downloadDir)
+        store.set('himdPath', this.himdPath)
         bus.$emit('config-update')
       },
       /**
@@ -129,6 +147,12 @@
         if (store.has('downloadDir')) {
           this.downloadFormat = store.get('downloadDir')
         }
+        if (store.has('himd')) {
+          this.himd = store.get('himd')
+        }
+        if (store.has('himdPath')) {
+          this.himdPath = store.get('himdPath')
+        }
       },
       /**
         * Show debug console
@@ -145,6 +169,18 @@
             console.log('selected download directory:' + names[0])
             store.set('downloadDir', names[0] + path.sep)
             this.downloadDir = store.get('downloadDir')
+          }
+        })
+      },
+      chooseHiMDPath: function () {
+        remote.dialog.showOpenDialog({
+          properties: ['openDirectory'],
+          defaultPath: this.himdPath
+        }, names => {
+          if (names != null) {
+            console.log('selected download directory:' + names[0])
+            store.set('downloadDir', names[0] + path.sep)
+            this.himdPath = store.get('downloadDir')
           }
         })
       }

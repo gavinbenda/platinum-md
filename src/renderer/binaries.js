@@ -18,3 +18,4 @@ const binariesPath =
 export const atracdencPath = path.resolve(path.join(binariesPath, './atracdenc'))
 export const ffmpegPath = path.resolve(path.join(binariesPath, './ffmpeg'))
 export const netmdcliPath = path.resolve(path.join(binariesPath, './netmdcli'))
+export const himdcliPath = path.resolve(path.join(binariesPath, './himdcli'))

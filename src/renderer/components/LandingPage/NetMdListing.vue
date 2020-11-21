@@ -110,7 +110,7 @@
 
 <script>
 import bus from '@/bus'
-import { netmdcliPath } from '@/binaries'
+import { netmdcliPath, himdcliPath } from '@/binaries'
 import { convertAudio, ensureDirSync } from '@/common'
 const usbDetect = require('usb-detection')
 const homedir = require('os').homedir()
@@ -141,7 +141,9 @@ export default {
       downloadFormat: 'FLAC',
       rh1: false,
       useSonicStageNos: true,
-      progress: 'Idle'
+      progress: 'Idle',
+      himdPath: '',
+      himd: true
     }
   },
   mounted () {
@@ -209,7 +211,12 @@ export default {
       console.log('Attempting to read from NetMD')
       this.tracks = []
       return new Promise((resolve, reject) => {
-        let netmdcli = require('child_process').spawn(netmdcliPath, ['-v'])
+        let netmdcli
+        if (this.himd) {
+          netmdcli = require('child_process').spawn(himdcliPath, [this.himdPath, 'tracks', 'json'])
+        } else {
+          netmdcli = require('child_process').spawn(netmdcliPath, ['-v'])
+        }
         netmdcli.on('error', (error) => {
           console.log(`child process creating error with error ${error}`)
           reject(error)
@@ -221,6 +228,9 @@ export default {
           if (this.IsJsonString(stringData)) {
             let jsonData = JSON.parse(stringData)
             this.info = jsonData
+            if (this.himd) {
+              this.info.device = 'Hi-MD: ' + this.himdPath
+            }
             // parse track data into array format for table display
             let results = Object.keys(jsonData.tracks).map((key) => {
               return jsonData.tracks[key]
@@ -510,6 +520,12 @@ export default {
       }
       if (store.has('useSonicStageNos')) {
         this.useSonicStageNos = store.get('useSonicStageNos')
+      }
+      if (store.has('himd')) {
+        this.himd = store.get('himd')
+      }
+      if (store.has('himdPath')) {
+        this.himdPath = store.get('himdPath')
       }
     }
   }

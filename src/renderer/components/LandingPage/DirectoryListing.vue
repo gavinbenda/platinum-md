@@ -93,7 +93,7 @@
 
 <script>
 import bus from '@/bus'
-import { atracdencPath, netmdcliPath } from '@/binaries'
+import { atracdencPath, netmdcliPath, himdcliPath } from '@/binaries'
 import { convertAudio, ensureDirSync } from '@/common'
 import clone from 'lodash/clone'
 import os from 'os'
@@ -137,7 +137,9 @@ export default {
         trackNo: 0
       },
       selectedTrackSource: {},
-      tempDirectory: 'pmd-temp'
+      tempDirectory: 'pmd-temp',
+      himd: false,
+      himdPath: ''
     }
   },
   created () {
@@ -297,7 +299,7 @@ export default {
         // uploading as LP2
         // This uses an experimental ATRAC3 encoder
         // The files are converted into ATRAC locally, and then sent to the NetMD device
-        } else {
+        } else if (this.conversionMode === 'LP2' || this.conversionMode === 'LP4') {
           // check the filetype, and choose the output
           switch (this.conversionMode) {
             case 'LP2':
@@ -310,6 +312,11 @@ export default {
           await convertAudio(sourceFile, destFile)
           await self.convertToAtrac(destFile, atracFile)
           await self.convertToWavWrapper(atracFile, finalFile)
+        } else {
+          // Convert to MP3
+          // TODO - implement detection for file format, if !mp3, convert to mp3
+          console.log('Converting to MP3')
+          finalFile = sourceFile
         }
         resolve(finalFile)
       })
@@ -391,7 +398,13 @@ export default {
     },
     sendCommand: async function (file, trackTitle) {
       return new Promise(async (resolve, reject) => {
-        let netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file, trackTitle])
+        let netmdcli
+        if (this.himd) {
+          console.log('writemp3 ' + file)
+          netmdcli = require('child_process').spawn(himdcliPath, [this.himdPath, 'writemp3', file])
+        } else {
+          netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file, trackTitle])
+        }
         netmdcli.on('close', (code) => {
           if (code === 0) {
             console.log('netmdcli send returned Success code ' + code)
@@ -448,6 +461,12 @@ export default {
       }
       if (store.has('sonicStageNosStrip')) {
         this.sonicStageNosStrip = store.get('sonicStageNosStrip')
+      }
+      if (store.has('himd')) {
+        this.himd = store.get('himd')
+      }
+      if (store.has('himdPath')) {
+        this.himdPath = store.get('himdPath')
       }
     }
   }
