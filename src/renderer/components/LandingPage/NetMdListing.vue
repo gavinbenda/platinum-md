@@ -27,8 +27,8 @@
           </b-col>
           <b-col class="text-right">
             <b-button variant="success" @click="download" v-show=rh1 :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
-            <b-button variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
-            <b-dropdown class="danger my-0 py-0">
+            <b-button v-if="mode === 'md'" variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
+            <b-dropdown v-if="mode === 'md'" class="danger my-0 py-0">
                 <b-dropdown-item>
                   <b-button variant="danger" @click="eraseDisc" :disabled="isBusy" block>Erase Disc <font-awesome-icon icon="times"></font-awesome-icon></b-button>
                 </b-dropdown-item>
@@ -143,7 +143,7 @@ export default {
       useSonicStageNos: true,
       progress: 'Idle',
       himdPath: '',
-      himd: true
+      mode: 'md'
     }
   },
   mounted () {
@@ -177,6 +177,7 @@ export default {
     })
     bus.$on('config-update', () => {
       this.readConfig()
+      this.readNetMd()
     })
 
     this.readNetMd()
@@ -208,11 +209,15 @@ export default {
       */
     readNetMd: function () {
       bus.$emit('netmd-status', { eventType: 'no-connection', deviceName: '' })
-      console.log('Attempting to read from NetMD')
+      if (this.mode === 'himd') {
+        console.log('Attempting to read from HiMD')
+      } else {
+        console.log('Attempting to read from NetMD')
+      }
       this.tracks = []
       return new Promise((resolve, reject) => {
         let netmdcli
-        if (this.himd) {
+        if (this.mode === 'himd') {
           netmdcli = require('child_process').spawn(himdcliPath, [this.himdPath, 'tracks', 'json'])
         } else {
           netmdcli = require('child_process').spawn(netmdcliPath, ['-v'])
@@ -228,7 +233,7 @@ export default {
           if (this.IsJsonString(stringData)) {
             let jsonData = JSON.parse(stringData)
             this.info = jsonData
-            if (this.himd) {
+            if (this.mode === 'himd') {
               this.info.device = 'Hi-MD: ' + this.himdPath
             }
             // parse track data into array format for table display
@@ -521,8 +526,8 @@ export default {
       if (store.has('useSonicStageNos')) {
         this.useSonicStageNos = store.get('useSonicStageNos')
       }
-      if (store.has('himd')) {
-        this.himd = store.get('himd')
+      if (store.has('mode')) {
+        this.mode = store.get('mode')
       }
       if (store.has('himdPath')) {
         this.himdPath = store.get('himdPath')

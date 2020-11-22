@@ -3,11 +3,11 @@
 
     <b-modal @ok="saveSettings" ref="settings-modal" title="Settings">
       <b-form-group label="Mode:">
-        <b-form-radio v-model="himd" name="mode-md" value=false>MD</b-form-radio>
-        <b-form-radio v-model="himd" name="mode-himd" value=true>Hi-MD</b-form-radio>
+        <b-form-radio v-model="mode" name="mode-md" value='md'>MD</b-form-radio>
+        <b-form-radio v-model="mode" name="mode-himd" value='himd'>Hi-MD</b-form-radio>
       </b-form-group>
       <hr />
-      <b-form-group v-if=himd>
+      <b-form-group v-if="mode === 'himd'">
         <p>HiMD Path: {{ himdPath }}</p>
         <b-button variant="outline-primary" @click="chooseHiMDPath">Browse <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
       </b-form-group>
@@ -46,7 +46,7 @@
       <b-row>
         <b-col cols="6"><img id="logo" src="~@/assets/logo.svg" alt="Platinum MD" class="p-3"></b-col>
         <p><b>Experimental deenine Hi-MD Build 0.0.1</b></p>
-        <b-col v-if="himd === false" class="text-center"><control-bar></control-bar></b-col>
+        <b-col v-if="mode === 'md'" class="text-center"><control-bar></control-bar></b-col>
         <b-col class="text-right p-3"><b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button></b-col>
       </b-row>
     </b-container>
@@ -84,7 +84,7 @@
         sonicStageNosStrip: true,
         useSonicStageNos: true,
         rh1: false,
-        himd: false,
+        mode: 'md',
         downloadFormat: 'FLAC',
         downloadDir: homedir + '/pmd-music/',
         himdPath: '/Users/Doug/workspace/linux-minidisc/testdata/himd/'
@@ -111,8 +111,8 @@
         * Save settings to store
         */
       saveSettings: function () {
-        store.set('himd', this.himd)
-        if (this.himd) {
+        store.set('mode', this.mode)
+        if (this.mode === 'himd') {
           store.set('conversionMode', 'MP3')
         } else {
           store.set('conversionMode', this.conversionMode)
@@ -147,8 +147,8 @@
         if (store.has('downloadDir')) {
           this.downloadFormat = store.get('downloadDir')
         }
-        if (store.has('himd')) {
-          this.himd = store.get('himd')
+        if (store.has('mode')) {
+          this.mode = store.get('mode')
         }
         if (store.has('himdPath')) {
           this.himdPath = store.get('himdPath')

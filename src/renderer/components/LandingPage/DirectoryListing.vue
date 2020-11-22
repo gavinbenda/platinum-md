@@ -138,7 +138,7 @@ export default {
       },
       selectedTrackSource: {},
       tempDirectory: 'pmd-temp',
-      himd: false,
+      mode: 'md',
       himdPath: ''
     }
   },
@@ -267,7 +267,7 @@ export default {
         // Convert to desired format
         let finalFile = await this.convert(fileName, this.selected[i])
         let trackTitle = (this.selected[i].artist !== 'No Artist') ? this.selected[i].title + ' - ' + this.selected[i].artist : this.selected[i].title
-        console.log('Conversion Complete.')
+        console.log('Conversion Complete: ' + finalFile)
         await this.sendToPlayer(finalFile, trackTitle)
         bus.$emit('netmd-status', { eventType: 'transfer-completed' })
       }
@@ -315,7 +315,10 @@ export default {
         } else {
           // Convert to MP3
           // TODO - implement detection for file format, if !mp3, convert to mp3
-          console.log('Converting to MP3')
+          // let mp3File = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.mp3')
+          console.log('HiMD - Converting to MP3')
+          // TODO - This isnt working properly so is commented for the moment
+          // await convertAudio(sourceFile, mp3File, 'MP3')
           finalFile = sourceFile
         }
         resolve(finalFile)
@@ -399,7 +402,7 @@ export default {
     sendCommand: async function (file, trackTitle) {
       return new Promise(async (resolve, reject) => {
         let netmdcli
-        if (this.himd) {
+        if (this.mode === 'himd') {
           console.log('writemp3 ' + file)
           netmdcli = require('child_process').spawn(himdcliPath, [this.himdPath, 'writemp3', file])
         } else {
@@ -462,8 +465,8 @@ export default {
       if (store.has('sonicStageNosStrip')) {
         this.sonicStageNosStrip = store.get('sonicStageNosStrip')
       }
-      if (store.has('himd')) {
-        this.himd = store.get('himd')
+      if (store.has('mode')) {
+        this.mode = store.get('mode')
       }
       if (store.has('himdPath')) {
         this.himdPath = store.get('himdPath')
