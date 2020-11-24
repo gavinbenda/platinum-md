@@ -315,11 +315,13 @@ export default {
         } else {
           // Convert to MP3
           // TODO - implement detection for file format, if !mp3, convert to mp3
-          // let mp3File = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.mp3')
-          console.log('HiMD - Converting to MP3')
-          // TODO - This isnt working properly so is commented for the moment
-          // await convertAudio(sourceFile, mp3File, 'MP3')
-          finalFile = sourceFile
+          let mp3File = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.mp3')
+          let wavFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.wav')
+          this.progress = 'Converting to Wav (sigh)'
+          await convertAudio(sourceFile, wavFile)
+          this.progress = 'Converting to Mp3'
+          await convertAudio(wavFile, mp3File, 'MP3')
+          finalFile = mp3File
         }
         resolve(finalFile)
       })
@@ -403,8 +405,11 @@ export default {
       return new Promise(async (resolve, reject) => {
         let netmdcli
         if (this.mode === 'himd') {
-          console.log('writemp3 ' + file)
+          console.log(himdcliPath + ' ' + this.himdPath + ' writemp3 ' + file)
           netmdcli = require('child_process').spawn(himdcliPath, [this.himdPath, 'writemp3', file])
+          // himdcli doesnt provide status updates, so set status instead of waiting on output
+          this.progress = 'Transferring ' + trackTitle
+          bus.$emit('netmd-status', { progress: 'Receiving ' + trackTitle })
         } else {
           netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file, trackTitle])
         }

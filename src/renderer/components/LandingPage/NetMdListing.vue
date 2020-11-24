@@ -242,9 +242,11 @@ export default {
             })
             this.tracks = results
             console.log(results)
+            console.log(this.info.recordedTime !== '00:00:00.00' && this.tracks.length === 0)
             // This is an awful check, that I hate.
             // Ensure 'sane' data comes back before resolving
-            if ((this.info.recordedTime !== '00:00:00.00' && this.tracks.length === 0) || (this.info.recordedTime === '00:00:00.00' && this.info.availableTime === '00:00:00.00')) {
+            // TODO: Fix himdcli so the 'is md' check can be removed in the last case - this was causing incorrect error when reading a blank himd disc
+            if ((this.info.recordedTime !== '00:00:00.00' && this.tracks.length === 0) || (this.info.recordedTime === '00:00:00.00' && this.info.availableTime === '00:00:00.00' && this.mode === 'md')) {
               let errorMessage = { message: 'Device not ready, recordedTime: ' + this.info.recordedTime + ' availableTime: ' + this.info.availableTime + ' Tracks: ' + this.tracks.length }
               reject(errorMessage)
             } else {

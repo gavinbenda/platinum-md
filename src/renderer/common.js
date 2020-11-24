@@ -17,7 +17,7 @@ export async function convertAudio (source, dest, format) {
         codec = ['-acodec', 'flac']
         break
       case ('MP3'):
-        codec = ['-acodec', 'mp3', '-b:a', '128k']
+        codec = ['-acodec', 'mp3', '-b:a', '256k', '-ar', '44100']
         break
     }
     ffmpeg(source)
