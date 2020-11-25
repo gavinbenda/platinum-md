@@ -314,7 +314,7 @@ export default {
           await self.convertToWavWrapper(atracFile, finalFile)
         } else {
           // Convert to MP3
-          // TODO - implement detection for file format, if !mp3, convert to mp3
+          // TODO - this is a hack because some mp3s cannot play on himd device
           let mp3File = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.mp3')
           let wavFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.wav')
           this.progress = 'Converting to Wav (sigh)'

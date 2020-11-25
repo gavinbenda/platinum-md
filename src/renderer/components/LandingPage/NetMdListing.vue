@@ -26,7 +26,7 @@
             <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
           </b-col>
           <b-col class="text-right">
-            <b-button variant="success" @click="download" v-show=rh1 :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
+            <b-button variant="success" @click="downloadTracks" v-show=download :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
             <b-button v-if="mode === 'md'" variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
             <b-dropdown v-if="mode === 'md'" class="danger my-0 py-0">
                 <b-dropdown-item>
@@ -66,9 +66,9 @@
 
         <template v-slot:cell(name)="data">
           <span v-if="data.item.name == ' '">Untitled</span><span v-else>{{ data.item.name }}</span>
-          <a @click="showRenameModal(data.item.no, data.item.name)" title="Edit Track"><font-awesome-icon icon="edit"></font-awesome-icon></a>
-          <a @click="showMoveTrackModal(data.item.no)" title="Move Track"><font-awesome-icon icon="random"></font-awesome-icon></a>
-          <a @click="runAction('play', data.item.no)" title="Play Track"><font-awesome-icon icon="play"></font-awesome-icon></a>
+          <a v-if="mode === 'md'" @click="showRenameModal(data.item.no, data.item.name)" title="Edit Track"><font-awesome-icon icon="edit"></font-awesome-icon></a>
+          <a v-if="mode === 'md'" @click="showMoveTrackModal(data.item.no)" title="Move Track"><font-awesome-icon icon="random"></font-awesome-icon></a>
+          <a v-if="mode === 'md'" @click="runAction('play', data.item.no)" title="Play Track"><font-awesome-icon icon="play"></font-awesome-icon></a>
         </template>
 
         <template v-slot:cell(formatted)="data">
@@ -139,7 +139,7 @@ export default {
       communicating: false,
       downloadDir: homedir + '/pmd-music/',
       downloadFormat: 'FLAC',
-      rh1: false,
+      download: false,
       useSonicStageNos: true,
       progress: 'Idle',
       himdPath: '',
@@ -166,7 +166,7 @@ export default {
         }
       }
       if ('deviceName' in data) {
-        this.rh1 = (data.deviceName === 'Sony MZ-RH1')
+        this.download = (data.deviceName === 'Sony MZ-RH1') || (this.mode === 'himd')
       }
       if ('progress' in data) {
         this.progress = data.progress
@@ -432,7 +432,7 @@ export default {
     /**
       * Download selected track from player and convert.
       */
-    download: async function () {
+    downloadTracks: async function () {
       // if button is clicked but nothing is selected, do nothing
       if (this.selected.length < 1) return
       bus.$emit('netmd-status', { eventType: 'busy' })
@@ -464,17 +464,18 @@ export default {
         } else {
           bus.$emit('netmd-status', { progress: 'Downloading track ' + trackno + ' of ' + selectedTracks.length })
         }
-        const downloadFile = await this.fetchTrack(downloadPath, trackno, selectedTracks[i].name, selectedTracks[i].bitrate)
+        const downloadFile = await this.fetchTrack(downloadPath, trackno, selectedTracks[i].name, selectedTracks[i].bitrate.trim())
         // timeout to avoid python errors when pulling multiple tracks
         await new Promise(async (resolve, reject) => setTimeout(resolve, 3000))
 
         // convert to selected audio format
         let promise = new Promise(async (resolve, reject) => {
-          console.log('Converting downloadFile: ' + downloadFile)
           if (downloadFile !== '' && this.downloadFormat !== 'RAW') {
             let outputFile = downloadFile.toString().replace(downloadFile.split('.').pop(), this.downloadFormat.toLowerCase())
+            console.log('Converting downloadFile: ' + downloadFile + ' to ' + outputFile)
             await convertAudio(downloadFile, outputFile, this.downloadFormat)
-            resolve((del.sync([downloadFile], {force: true})))
+            resolve((
+              del.sync([downloadFile], {force: true})))
           }
         })
         promise.finally()
@@ -488,7 +489,16 @@ export default {
       */
     fetchTrack: async function (downloadPath, trackNo, trackName, trackFormat) {
       return new Promise(async (resolve, reject) => {
-        let extension = (trackFormat === 'SP') ? '.aea' : '.at3'
+        let extensions = {
+          'AT3': '.at3',
+          'AT3+': '.oma',
+          'LP2': '.at3',
+          'LP4': '.at3',
+          'LPCM': '.pcm',
+          'MP3': '.mp3',
+          'SP': '.aea'
+        }
+        let extension = extensions[trackFormat]
         let downloadFile = downloadPath + '/'
         if (this.useSonicStageNos) {
           downloadFile += `00${trackNo}`.slice(-3) + '-' + trackName + extension
@@ -496,17 +506,24 @@ export default {
           downloadFile += trackName + extension
         }
         console.log('download file ' + downloadFile + ' track format: ' + trackFormat)
-        let netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'recv', trackNo, downloadFile])
-        netmdcli.on('close', (code) => {
+        let mdcli
+        if (this.mode === 'himd') {
+          let dumpcmd = (trackFormat === 'MP3') ? 'dumpmp3' : 'dumpnonmp3'
+          mdcli = require('child_process').spawn(himdcliPath, [this.himdPath, dumpcmd, trackNo, downloadFile])
+        } else {
+          mdcli = require('child_process').spawn(netmdcliPath, ['-v', 'recv', trackNo, downloadFile])
+        }
+
+        mdcli.on('close', (code) => {
           if (code === 0) {
             console.log('Finished fetchtrack download of track ' + trackNo)
             resolve(downloadFile)
           } else {
-            console.log('netmdcli error, returned ' + code)
+            console.log('cli error, returned ' + code)
             reject(code)
           }
         })
-        netmdcli.stdout.on('data', data => {
+        mdcli.stdout.on('data', data => {
           var message = data.toString()
           if (message.match(/\d\d\.\d/)) {
             bus.$emit('netmd-status', { progress: 'Downloading track ' + trackNo + ' - ' + message })

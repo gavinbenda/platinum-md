@@ -24,8 +24,9 @@
       <hr />
       <b-form-checkbox type="checkbox" name="sonicstage-titles" id="sonicstage-titles" v-model="sonicStageNosStrip">Strip SonicStage track numbers from titles (e.g 001-Title)</b-form-checkbox>
       <hr />
-      <template v-if=rh1>
-        <b>RH1 Download Options</b>
+      <template v-if="(mode === 'himd') || rh1">
+        <b v-if="mode === 'md'">RH1 Download Options</b>
+        <b v-if="mode === 'himd'">Hi-MD Download Options</b>
         <b-form-group label="Save downloaded tracks as:">
           <b-form-radio v-model="downloadFormat" name="WAV" value="WAV">WAV</b-form-radio>
           <b-form-radio v-model="downloadFormat" name="FLAC" value="FLAC">FLAC</b-form-radio>
@@ -96,7 +97,7 @@
     mounted () {
       bus.$on('netmd-status', (data) => {
         if ('deviceName' in data) {
-          this.rh1 = (data.deviceName === 'Sony MZ-RH1')
+          this.rh1 = ((data.deviceName === 'Sony MZ-RH1') || (this.mode === 'himd'))
         }
       })
     },
