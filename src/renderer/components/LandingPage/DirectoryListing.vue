@@ -94,7 +94,7 @@
 <script>
 import bus from '@/bus'
 import { atracdencPath, netmdcliPath, himdcliPath } from '@/binaries'
-import { convertAudio, ensureDirSync } from '@/common'
+import { convertAudio, ensureDirSync, stripID3 } from '@/common'
 import clone from 'lodash/clone'
 import os from 'os'
 import path from 'path'
@@ -313,15 +313,15 @@ export default {
           await self.convertToAtrac(destFile, atracFile)
           await self.convertToWavWrapper(atracFile, finalFile)
         } else {
-          // Convert to MP3
-          // TODO - this is a hack because some mp3s cannot play on himd device
-          let mp3File = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.mp3')
-          let wavFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.wav')
-          this.progress = 'Converting to Wav (sigh)'
-          await convertAudio(sourceFile, wavFile)
-          this.progress = 'Converting to Mp3'
-          await convertAudio(wavFile, mp3File, 'MP3')
-          finalFile = mp3File
+          // !SP and !LP, so must be hi-md - Convert to MP3
+          finalFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.mp3')
+          if (fileExtension.toLowerCase() === '.mp3') {
+            // Strip id3v2 tag because it can cause tracks to be unplayable on device
+            await stripID3(sourceFile, finalFile)
+          } else {
+            this.progress = 'Converting to Mp3'
+            await convertAudio(sourceFile, finalFile, 'MP3')
+          }
         }
         resolve(finalFile)
       })
@@ -387,7 +387,11 @@ export default {
       */
     sendToPlayer: async function (file, trackTitle) {
       this.progress = 'Sending to Player'
-      console.log('Attempting to send to NetMD device')
+      if (this.mode === 'md') {
+        console.log('Attempting to send to NetMD device')
+      } else {
+        console.log('Attempting to send to HiMD device')
+      }
       // send off command, we wrap this so it can be retryed
       // not 100% on this method, may refactor in the future
       let retries = 5

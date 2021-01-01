@@ -8,6 +8,7 @@
       </b-form-group>
       <hr />
       <b-form-group v-if="mode === 'himd'">
+        <p><b>Hi-MD functionality is experimental - ONLY USE FOR DISCS YOU ARE PREPARED TO ERASE</b> - in some cases himd functionality can corrupt the disc which prevents reading of any tracks. Only mz-rh devices are supported. Hi-SP/Hi-LP/MP3 transfers are supported from hi-md to computer, only MP3 transfers are supported to hi-md. Renaming/erasing tracks/discs is not supported for hi-md. The hi-md recorder appears as a usb drive when connected to computer, select that drive below, e.g. 'E:' or '/Volumes/NO NAME/'</p>
         <p>HiMD Path: {{ himdPath }}</p>
         <b-button variant="outline-primary" @click="chooseHiMDPath">Browse <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
       </b-form-group>
@@ -46,7 +47,7 @@
     <b-container fluid>
       <b-row>
         <b-col cols="6"><img id="logo" src="~@/assets/logo.svg" alt="Platinum MD" class="p-3"></b-col>
-        <p><b>Experimental deenine Hi-MD Build 0.0.1</b></p>
+        <p><b>Experimental deenine Hi-MD Build 0.0.2</b></p>
         <b-col v-if="mode === 'md'" class="text-center"><control-bar></control-bar></b-col>
         <b-col class="text-right p-3"><b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button></b-col>
       </b-row>
