@@ -23,7 +23,7 @@
             <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
             <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }} <font-awesome-icon icon="edit"></font-awesome-icon></a></b-badge>
             <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
-            <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
+            <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle' && progress != 'Disc Full'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
           </b-col>
           <b-col class="text-right">
             <b-button variant="success" @click="downloadTracks" v-show=download :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
@@ -112,6 +112,7 @@
 import bus from '@/bus'
 import { netmdcliPath, himdcliPath } from '@/binaries'
 import { convertAudio, ensureDirSync } from '@/common'
+const checkDiskSpace = require('check-disk-space')
 const usbDetect = require('usb-detection')
 const homedir = require('os').homedir()
 const del = require('del')
@@ -233,9 +234,6 @@ export default {
           if (this.IsJsonString(stringData)) {
             let jsonData = JSON.parse(stringData)
             this.info = jsonData
-            if (this.mode === 'himd') {
-              this.info.device = 'Hi-MD: ' + this.himdPath
-            }
             // parse track data into array format for table display
             let results = Object.keys(jsonData.tracks).map((key) => {
               return jsonData.tracks[key]
@@ -243,6 +241,15 @@ export default {
             this.tracks = results
             console.log(results)
             console.log(this.info.recordedTime !== '00:00:00.00' && this.tracks.length === 0)
+
+            if (this.mode === 'himd') {
+              this.info.device = 'Hi-MD: ' + this.himdPath
+              checkDiskSpace(this.himdPath).then((discspace) => {
+                this.info.availableTime = this.formatBytes(discspace.free)
+                bus.$emit('netmd-status', { 'freeSpace': discspace.free })
+              })
+            }
+
             // This is an awful check, that I hate.
             // Ensure 'sane' data comes back before resolving
             // TODO: Fix himdcli so the 'is md' check can be removed in the last case - this was causing incorrect error when reading a blank himd disc
@@ -530,6 +537,21 @@ export default {
           }
         })
       })
+    },
+    /*
+     * Format free space into something human readable
+     * from: https://stackoverflow.com/questions/15900485/correct-way-to-convert-size-in-bytes-to-kb-mb-gb-in-javascript
+     */
+    formatBytes: function (bytes, decimals = 2) {
+      if (bytes === 0) return '0 Bytes'
+
+      const k = 1024
+      const dm = decimals < 0 ? 0 : decimals
+      const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB']
+
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
     },
     /**
       * Read-in config file

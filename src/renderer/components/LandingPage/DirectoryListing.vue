@@ -36,7 +36,7 @@
         <b-col>
           {{ this.dir }}<br />
           <b>{{ selected.length }}</b> tracks selected {{ conversionMode }}<br />
-          <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
+          <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle' && progress != 'Disc Full'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
         </b-col>
         <b-col class="text-right">
           <b-button variant="primary" @click="chooseDir">Folder <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
@@ -158,6 +158,9 @@ export default {
         } else {
           this.isBusy = false
         }
+      }
+      if ('freeSpace' in data) {
+        this.freeSpace = data.freeSpace
       }
     })
   },
@@ -400,6 +403,10 @@ export default {
           await this.sendCommand(file, trackTitle)
           break
         } catch (err) {
+          console.log(err.message)
+          if (err.message === 'Disc Full') {
+            return
+          }
           console.log('Attempt to send file failed, retrying...')
           await new Promise(async (resolve, reject) => setTimeout(resolve, 2000))
         }
@@ -408,29 +415,43 @@ export default {
     sendCommand: async function (file, trackTitle) {
       return new Promise(async (resolve, reject) => {
         let netmdcli
+        let cliname
         if (this.mode === 'himd') {
-          console.log(himdcliPath + ' ' + this.himdPath + ' writemp3 ' + file)
-          netmdcli = require('child_process').spawn(himdcliPath, [this.himdPath, 'writemp3', file])
-          // himdcli doesnt provide status updates, so set status instead of waiting on output
-          this.progress = 'Transferring ' + trackTitle
-          bus.$emit('netmd-status', { progress: 'Receiving ' + trackTitle })
+          cliname = 'himdcli'
+          // check that disc is not full
+          let size = fs.statSync(file).size
+          if (size > this.freeSpace) {
+            console.log('ERROR: track ' + file + ' larger than free space on himd device')
+            this.progress = 'Disc Full'
+            bus.$emit('netmd-status', { progress: 'Disc Full' })
+            return (Error('Disc Full'))
+          } else {
+            // transfer track  to himd
+            console.log(himdcliPath + ' ' + this.himdPath + ' writemp3 ' + file)
+            netmdcli = require('child_process').spawn(himdcliPath, [this.himdPath, 'writemp3', file])
+            // himdcli doesnt provide status updates, so set status instead of waiting on output
+            this.progress = 'Transferring ' + trackTitle
+            bus.$emit('netmd-status', { progress: 'Receiving ' + trackTitle })
+          }
         } else {
+          cliname = 'netmdcli'
+          // transfer track to netmd
           netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file, trackTitle])
         }
         netmdcli.on('close', (code) => {
           if (code === 0) {
-            console.log('netmdcli send returned Success code ' + code)
+            console.log(cliname + ' send returned Success code ' + code)
             bus.$emit('track-sent')
             resolve()
           } else {
-            console.log('netmdcli error, returned ' + code)
+            console.log(cliname + ' error, returned ' + code)
             reject(code)
           }
           this.progress = 'Idle'
           bus.$emit('netmd-status', { progress: 'Idle' })
         })
         netmdcli.on('error', (error) => {
-          console.log(`netmdcli send errored with error ${error}`)
+          console.log(cliname + ` send errored with error ${error}`)
           reject(error)
         })
         // we get a fair bit of useful progress data returned here for debugging
