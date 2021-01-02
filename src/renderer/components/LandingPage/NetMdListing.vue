@@ -234,6 +234,13 @@ export default {
           if (this.IsJsonString(stringData)) {
             let jsonData = JSON.parse(stringData)
             this.info = jsonData
+            if (this.mode === 'himd') {
+              checkDiskSpace(this.himdPath).then((discspace) => {
+                this.info.device = 'Hi-MD: ' + this.himdPath
+                bus.$emit('netmd-status', { 'freeSpace': discspace.free })
+                this.info.availableTime = this.formatBytes(discspace.free)
+              })
+            }
             // parse track data into array format for table display
             let results = Object.keys(jsonData.tracks).map((key) => {
               return jsonData.tracks[key]
@@ -241,15 +248,6 @@ export default {
             this.tracks = results
             console.log(results)
             console.log(this.info.recordedTime !== '00:00:00.00' && this.tracks.length === 0)
-
-            if (this.mode === 'himd') {
-              this.info.device = 'Hi-MD: ' + this.himdPath
-              checkDiskSpace(this.himdPath).then((discspace) => {
-                this.info.availableTime = this.formatBytes(discspace.free)
-                bus.$emit('netmd-status', { 'freeSpace': discspace.free })
-              })
-            }
-
             // This is an awful check, that I hate.
             // Ensure 'sane' data comes back before resolving
             // TODO: Fix himdcli so the 'is md' check can be removed in the last case - this was causing incorrect error when reading a blank himd disc
