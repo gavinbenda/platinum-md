@@ -260,6 +260,8 @@ export default {
               this.communicating = false
               resolve()
             }
+          } else {
+            console.error('CLI did not return valid json data')
           }
         })
         // if RH1, show button. VID/PID taken from libnetmd/netmd_dev.c {0x54c, 0x286}
