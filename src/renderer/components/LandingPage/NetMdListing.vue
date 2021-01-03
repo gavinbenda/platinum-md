@@ -218,6 +218,7 @@ export default {
       this.tracks = []
       return new Promise((resolve, reject) => {
         let netmdcli
+        let stringData = ''
         if (this.mode === 'himd') {
           netmdcli = require('child_process').spawn(himdcliPath, [this.himdPath, 'tracks', 'json'])
         } else {
@@ -228,8 +229,12 @@ export default {
           reject(error)
         })
         netmdcli.stdout.on('data', data => {
+          // buffer output from netmdcli
+          stringData += data.toString()
+        })
+        netmdcli.on('close', (code) => {
+          // on exit, process the output data
           // get JSON response from netmdcli, store full response for later
-          let stringData = data.toString()
           console.log(stringData)
           if (this.IsJsonString(stringData)) {
             let jsonData = JSON.parse(stringData)
