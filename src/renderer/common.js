@@ -7,7 +7,7 @@ ffmpeg.setFfmpegPath(ffmpegPath)
   * Convert audio file to WAV file using ffmpeg
   * This MUST be 44100 and 16bit for the atrac encoder to work
   */
-export async function convertAudio (source, dest, format) {
+export async function convertAudio (source, dest, format, title = null) {
   return new Promise(async (resolve, reject) => {
     // Start conversion
     var codec = ['-acodec', 'pcm_s16le']
@@ -17,7 +17,11 @@ export async function convertAudio (source, dest, format) {
         codec = ['-acodec', 'flac']
         break
       case ('MP3'):
-        codec = ['-acodec', 'mp3', '-b:a', '256k', '-ar', '44100']
+        if (title !== null) {
+          codec = ['-metadata', 'title=' + title, '-acodec', 'mp3', '-b:a', '256k', '-ar', '44100']
+        } else {
+          codec = ['-acodec', 'mp3', '-b:a', '256k', '-ar', '44100']
+        }
         break
     }
     ffmpeg(source)
