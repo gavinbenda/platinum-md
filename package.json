@@ -140,6 +140,7 @@
     "cfonts": "^2.8.6",
     "chai": "^4.1.2",
     "chalk": "^2.4.2",
+    "check-disk-space":"^2.1.0",
     "copy-webpack-plugin": "^4.5.1",
     "cross-env": "^5.1.6",
     "css-loader": "^0.28.11",

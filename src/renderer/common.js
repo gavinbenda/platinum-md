@@ -17,13 +17,45 @@ export async function convertAudio (source, dest, format) {
         codec = ['-acodec', 'flac']
         break
       case ('MP3'):
-        codec = ['-acodec', 'mp3', '-b:a', '320k']
+        codec = ['-acodec', 'mp3', '-b:a', '256k', '-ar', '44100']
         break
     }
     ffmpeg(source)
       .output(dest)
       .outputOption(codec)
       .audioFrequency(44100)
+      .on('start', function (commandLine) {
+        console.log('Spawned Ffmpeg with command: ', commandLine)
+      })
+      .on('progress', function (progress) {
+        console.log('Processing: ' + progress.timemark + ' done ' + progress.targetSize + ' kilobytes')
+      })
+      // If successful, resolve
+      .on('end', function () {
+        console.log('ffmpeg completed successfully')
+        resolve()
+      })
+      // Reject if we get any errors
+      .on('error', function (err) {
+        console.log('ffmpeg error: ' + err.message)
+        reject(err.message)
+      })
+      .run()
+  })
+}
+
+/**
+  * Strip ID3v2 tag from mp3 file
+  */
+export async function stripID3 (source, dest) {
+  return new Promise(async (resolve, reject) => {
+    // Start conversion
+    var codec = ['-acodec', 'pcm_s16le']
+    console.log('Starting ID3 strip using ffmpeg: ' + source + ' --> ' + dest)
+    codec = ['-codec:a', 'copy', '-map', 'a']
+    ffmpeg(source)
+      .output(dest)
+      .outputOption(codec)
       .on('start', function (commandLine) {
         console.log('Spawned Ffmpeg with command: ', commandLine)
       })
