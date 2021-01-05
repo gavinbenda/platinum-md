@@ -1,5 +1,6 @@
 # Commented sections below can be used to run tests on the CI server
 # https://simulatedgreg.gitbooks.io/electron-vue/content/en/testing.html#on-the-subject-of-ci-testing
+os: osx
 osx_image: xcode12.2
 sudo: required
 dist: trusty
@@ -7,6 +8,7 @@ language: c
 matrix:
   include:
   - os: osx
+    osx_image: "xcode12.2"
   - os: linux
     env: CC=clang CXX=clang++ npm_config_clang=1
     compiler: clang
