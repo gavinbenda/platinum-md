@@ -1,6 +1,9 @@
+[![Build Status](https://travis-ci.org/gavinbenda/platinum-md.svg?branch=master)](https://travis-ci.org/gavinbenda/platinum-md)
+
 # Platinum-MD
 
-> A Gui for NetMD
+> A Gui for NetMD.
+> This project aims to make uploading audio files to NetMD players seamless and automatic.
 
 ![Screenshot](https://i.imgur.com/GdmUdYP.png)
 
@@ -10,11 +13,11 @@
 
 You will need to install homebrew: https://docs.brew.sh/Installation
 
-`/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"`
+`/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install.sh)"`
 
 Then install the following:
 
-`brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg && brew link --force qt5`
+`brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg json-c && brew link --force qt5`
 
 ##### Windows
 
@@ -34,7 +37,7 @@ You will also likely need to allow your user permissions to the USB/NetMD Device
 This is a 'catch-all' but you may wish to add a specific deviceId/vendorId if you want to lock permissions down.
 `sudo nano /etc/udev/rules.d/50-device.rules` and add `SUBSYSTEM=="usb", GROUP="YOURUSERGROUPHERE"`
 
-#### Installation
+#### Download & Installation
 
 ##### OSX
 
@@ -52,14 +55,11 @@ Download the [latest release](https://github.com/gavinbenda/platinum-md/releases
 
 Run the installer, don't forget to run Zadig above.
 
+
 ##### Linux
 
 Download the [latest release](https://github.com/gavinbenda/platinum-md/releases/download/v0.7.0-alpha/platinum-md-0.7.0.AppImage), and open the platinum-md AppImage Setup file.
 
-
-## Overview
-
-This project aims to make uploading audio files to NetMD players seamless and automatic.
 
 ## Features
 
@@ -73,8 +73,10 @@ LP2/LP4 with an experimental encoder
 ## Release Notes
 
 This is a very alpha release, expect bugs.
+Please report any bugs using the GitHub Issues feature.
 
-## FAQ / Troubleshooting
+
+## Troubleshooting
 
 * Make sure you have a disk in the device before connecting.
 * If the interface shows "Negotiating with device" but won't connect, click the `retry` button.
@@ -82,45 +84,32 @@ This is a very alpha release, expect bugs.
 * To access debug information, click `settings` and click the `debug window` button.
 * Some discs origionally made with SonicStage may not allow for tracks to be deleted by Platinum-MD.
 * Windows anti-virus software may sometimes incorrectly mark the app as a positive.
-* If using a Hi-MD device, ensure that the device is set to `MD` mode (mainly if using a blank disc) `Option` then `Disc Mode` and select `md`.
+* Ensure that there is a disc in the device. It must be a standard formatted disc, not Hi-MD, etc.
+* Set disc mode to "MD" - on your MD device, this is ususally under `Options` -> `Disc Mode` -> set to `MD`. This is ususally only an issue when using a blank disc.
 * Interfacing devices that are almost 20 years old will always be a little finnicky, so expect sometimes you may just have to un-plug/plug-in again.
+* There may be some useful information in the Platinum-MD debug window. To access, click `Settings` and then click the `Debug Window` button.
+
 
 ## Known bugs / future Plans
 
 * Some pre-recorded discs made with SonicStage may show as blank
-* ~~Bulk delete is not supported yet, but will be soon~~
-* ~~Moving tracks is also not supported, but also will be very soon~~
-* ~~Sometimes a track or two may be missed, this is likely a race-condtion, will be fixed in the next release~~
 * Automatic CLI tools for installing dependancies is highly desirable
-* ~~Linux release is imminent, starting with Ubuntu~~
-* ~~Windows release is a way off, sorry~~
 * The USB interface sometimes just fails, this is hard to fix as it seems to be the device itself (just unplug/plug-in again)
-* ~~LP4 is unsupported (relies on support from a 3rd party library)~~
 * LP2 is experimental, in my experience some tracks may have a slight hiss... this is an upstream issue.
+* There seems to be an issue with some Minidisc full size "Decks", this is also an upstream issue with linux-minidisc.
 
-### Stuck on "Negotiating" for more than 30 seconds
-
-* Press the retry button, feel free to press it a few times. This is often caused by a slow startup time of the device.
-* Ensure that there is a disc in the device. It must be a standard formatted disc, not Hi-MD, etc.
-* Set disc mode to "MD" - on your MD device, this is ususally under `Options` -> `Disc Mode` -> set to `MD`. This is ususally only an issue when using a blank disc.
-
-### Debugging
-
-* There may be some useful information in the Platinum-MD debug window. To access, click `Settings` and then click the `Debug Window` button.
 
 ## Thanks
 
 The Linux-Minidisc project (this is the most up-to-date Fork I've found, but there are many contributers):
-
 <https://github.com/vuori/linux-minidisc/>
 
 The ATRAC Encoder by @dcherednik
-
 <https://github.com/dcherednik/atracdenc>
+
 
 ## Donate
 
 I do this as a personal project, and a few people have expressed interested in donating to keep the project going, this will simply go back into buying test hardware and/or possibly coffee.
 
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=XVS44CZYFPCJJ)
-

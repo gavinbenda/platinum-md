@@ -1,6 +1,6 @@
 <template>
   <div>
-  
+
     <b-modal @ok="editTrack" ref="edit-track" title="Edit Track">
       <b-row class="my-1">
         <b-col sm="2">
@@ -12,7 +12,7 @@
       </b-row>
       <b-row class="my-1">
         <b-col sm="2">
-          <label for="input-small">Artist:</label>
+          <label for="input-small">Title:</label>
         </b-col>
         <b-col sm="10">
           <b-form-input v-model="selectedTrack.title" placeholder="Title"></b-form-input>
@@ -20,22 +20,23 @@
       </b-row>
       <b-row class="my-1">
         <b-col sm="2">
-          <label for="input-small">Title:</label>
+          <label for="input-small">Artist:</label>
         </b-col>
         <b-col sm="10">
           <b-form-input v-model="selectedTrack.artist" placeholder="Artist"></b-form-input>
         </b-col>
       </b-row>
     </b-modal>
-    
+
     <b-container class="toolbar py-2 m-0 sticky-top">
       <b-row align-v="center">
         <b-col cols="1">
           <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
         </b-col>
         <b-col>
+          {{ this.dir }}<br />
           <b>{{ selected.length }}</b> tracks selected {{ conversionMode }}<br />
-          <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
+          <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle' && progress != 'Disc Full'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
         </b-col>
         <b-col class="text-right">
           <b-button variant="primary" @click="chooseDir">Folder <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
@@ -43,7 +44,7 @@
         </b-col>
       </b-row>
     </b-container>
-    
+
     <b-table
       selectable
       striped
@@ -60,19 +61,19 @@
         <b-spinner class="align-middle"></b-spinner>
         <strong>Loading...</strong>
       </div>
-      
+
       <template v-slot:cell(trackNo)="data">
         <div>
           <h5 class="mb-0"><b-badge>{{ data.item.trackNo }}</b-badge></h5>
         </div>
       </template>
-      
+
       <template v-slot:cell(bitrate)="data">
         <div class="text-right">
           <b-badge variant="success" class="text-uppercase">{{ data.item.bitrate }} {{ data.item.codec }}</b-badge>
         </div>
       </template>
-      
+
       <template v-slot:cell(time)="data">
         <div class="text-right">
           {{ data.item.time | timeFormat }}
@@ -84,15 +85,16 @@
           <a @click="showEditModal(data.item)"><font-awesome-icon icon="edit"></font-awesome-icon></a>
         </div>
       </template>
-      
+
     </b-table>
- 
+
   </div>
 </template>
 
 <script>
 import bus from '@/bus'
-import { atracdencPath, netmdcliPath } from '@/binaries'
+import { atracdencPath, netmdcliPath, himdcliPath } from '@/binaries'
+import { convertAudio, ensureDirSync, stripID3 } from '@/common'
 import clone from 'lodash/clone'
 import os from 'os'
 import path from 'path'
@@ -129,12 +131,15 @@ export default {
       config: {},
       conversionMode: 'SP',
       titleFormat: '%title% - %artist%',
+      sonicStageNosStrip: 'true',
       bitrate: 128,
       selectedTrack: {
         trackNo: 0
       },
       selectedTrackSource: {},
-      tempDirectory: 'pmd-temp'
+      tempDirectory: 'pmd-temp',
+      mode: 'md',
+      himdPath: ''
     }
   },
   created () {
@@ -146,11 +151,16 @@ export default {
       this.readConfig()
     })
     bus.$on('netmd-status', (data) => {
-      console.log(data.eventType)
-      if (data.eventType === 'busy' || data.eventType === 'no-connection') {
-        this.isBusy = true
-      } else {
-        this.isBusy = false
+      if ('eventType' in data) {
+        console.log(data.eventType)
+        if (data.eventType === 'busy' || data.eventType === 'no-connection') {
+          this.isBusy = true
+        } else {
+          this.isBusy = false
+        }
+      }
+      if ('freeSpace' in data) {
+        this.freeSpace = data.freeSpace
       }
     })
   },
@@ -191,8 +201,8 @@ export default {
                 .then(metadata => {
                   // console.log(metadata)
                   // Get data for file object
+                  let title = (metadata.common.title !== undefined) ? metadata.common.title : (this.sonicStageNosStrip === true) ? path.parse(filePath).name.replace(RegExp(/^\d\d\d-/), '') : path.parse(filePath).name
                   let artist = (metadata.common.artist !== undefined) ? metadata.common.artist : 'No Artist'
-                  let title = (metadata.common.title !== undefined) ? metadata.common.title : filePath
                   let album = (metadata.common.album !== undefined) ? metadata.common.album : '-'
                   let bitrate = (metadata.format.bitrate !== undefined) ? metadata.format.bitrate : ''
                   let codec = (metadata.format.codec !== undefined) ? metadata.format.codec.replace(/^MPEG [12] Layer 3$/, 'MP3') : ''
@@ -217,7 +227,8 @@ export default {
                     format: fileTypeInfo.ext,
                     bitrate: (bitrate !== null) ? Math.round(bitrate / 1000) + 'kbps' : '-',
                     codec: (codec !== null) ? codec : '',
-                    time: time
+                    time: time,
+                    no_metadata: metadata.common.title
                   })
                 })
                 .catch(err => {
@@ -252,15 +263,15 @@ export default {
         var fileName = this.selected[i].fileName
         // Check or Create temp directory
         try {
-          this.ensureDirSync(this.dir + this.tempDirectory)
-          console.log('Directory created')
+          ensureDirSync(this.dir + this.tempDirectory)
+          console.log('Directory created' + this.dir + this.tempDirectory)
         } catch (err) {
           console.error(err)
         }
         // Convert to desired format
         let finalFile = await this.convert(fileName, this.selected[i])
-        let trackTitle = this.selected[i].title + ' - ' + this.selected[i].artist
-        console.log('Conversion Complete.')
+        let trackTitle = (this.selected[i].artist !== 'No Artist') ? this.selected[i].title + ' - ' + this.selected[i].artist : this.selected[i].title
+        console.log('Conversion Complete: ' + finalFile)
         await this.sendToPlayer(finalFile, trackTitle)
         bus.$emit('netmd-status', { eventType: 'transfer-completed' })
       }
@@ -287,57 +298,39 @@ export default {
         // The encoding process is handled by the NetMD device
         console.log('Starting conversion in <' + this.conversionMode + '> mode')
         if (this.conversionMode === 'SP') {
-          await self.convertToWav(sourceFile, finalFile, fileExtension)
+          this.progress = 'Converting to Wav'
+          await convertAudio(sourceFile, finalFile, fileExtension)
         // uploading as LP2
         // This uses an experimental ATRAC3 encoder
         // The files are converted into ATRAC locally, and then sent to the NetMD device
-        } else {
-          await self.convertToWav(sourceFile, destFile, fileExtension)
+        } else if (this.conversionMode === 'LP2' || this.conversionMode === 'LP4') {
+          // check the filetype, and choose the output
+          switch (this.conversionMode) {
+            case 'LP2':
+              this.bitrate = 128
+              break
+            case 'LP4':
+              this.bitrate = 64
+              break
+          }
+          await convertAudio(sourceFile, destFile)
           await self.convertToAtrac(destFile, atracFile)
           await self.convertToWavWrapper(atracFile, finalFile)
+        } else {
+          // !SP and !LP, so must be hi-md - Convert to MP3
+          finalFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.mp3')
+          if (fileExtension.toLowerCase() === '.mp3') {
+            // file is already a mp3, no need to convert
+            // Strip id3v2 tag because it can cause tracks to be unplayable on device
+            await stripID3(sourceFile, finalFile)
+          } else {
+            // file is not mp3
+            this.progress = 'Converting to Mp3'
+            let title = (selectedFile.no_metadata === undefined) ? selectedFile.title : null
+            await convertAudio(sourceFile, finalFile, 'MP3', title)
+          }
         }
         resolve(finalFile)
-      })
-    },
-    /**
-      * Convert input audio file to WAV file using ffmpeg
-      * This MUST be 44100 and 16bit for the atrac encoder to work
-      */
-    convertToWav: async function (source, dest, conversionMode) {
-      this.progress = 'Converting to Wav'
-      return new Promise(async (resolve, reject) => {
-        // check the filetype, and choose the output
-        switch (this.conversionMode) {
-          case 'LP2':
-            this.bitrate = 128
-            break
-          case 'LP4':
-            this.bitrate = 64
-            break
-        }
-        // Start conversion
-        console.log('Starting WAV conversion process using ffmpeg: ' + source + ' --> ' + dest)
-        ffmpeg(source)
-          .output(dest)
-          .outputOption(['-acodec', 'pcm_s16le'])
-          .audioFrequency(44100)
-          .on('start', function (commandLine) {
-            console.log('Spawned Ffmpeg with command: ', commandLine)
-          })
-          .on('progress', function (progress) {
-            console.log('Processing: ' + progress.timemark + ' done ' + progress.targetSize + ' kilobytes')
-          })
-          // If successful, resolve
-          .on('end', function () {
-            console.log('ffmpeg completed successfully')
-            resolve()
-          })
-          // Reject if we get any errors
-          .on('error', function (err) {
-            console.log('ffmpeg error: ' + err.message)
-            reject(err.message)
-          })
-          .run()
       })
     },
     /**
@@ -401,7 +394,11 @@ export default {
       */
     sendToPlayer: async function (file, trackTitle) {
       this.progress = 'Sending to Player'
-      console.log('Attempting to send to NetMD device')
+      if (this.mode === 'md') {
+        console.log('Attempting to send to NetMD device')
+      } else {
+        console.log('Attempting to send to HiMD device')
+      }
       // send off command, we wrap this so it can be retryed
       // not 100% on this method, may refactor in the future
       let retries = 5
@@ -410,6 +407,10 @@ export default {
           await this.sendCommand(file, trackTitle)
           break
         } catch (err) {
+          console.log(err.message)
+          if (err.message === 'Disc Full') {
+            return
+          }
           console.log('Attempt to send file failed, retrying...')
           await new Promise(async (resolve, reject) => setTimeout(resolve, 2000))
         }
@@ -417,20 +418,44 @@ export default {
     },
     sendCommand: async function (file, trackTitle) {
       return new Promise(async (resolve, reject) => {
-        let netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file, trackTitle])
+        let netmdcli
+        let cliname
+        if (this.mode === 'himd') {
+          cliname = 'himdcli'
+          // check that disc is not full
+          let size = fs.statSync(file).size
+          if (size > this.freeSpace) {
+            console.log('ERROR: track ' + file + ' larger than free space on himd device')
+            this.progress = 'Disc Full'
+            bus.$emit('netmd-status', { progress: 'Disc Full' })
+            return (Error('Disc Full'))
+          } else {
+            // transfer track  to himd
+            console.log(himdcliPath + ' ' + this.himdPath + ' writemp3 ' + file)
+            netmdcli = require('child_process').spawn(himdcliPath, [this.himdPath, 'writemp3', file])
+            // himdcli doesnt provide status updates, so set status instead of waiting on output
+            this.progress = 'Transferring ' + trackTitle
+            bus.$emit('netmd-status', { progress: 'Receiving ' + trackTitle })
+          }
+        } else {
+          cliname = 'netmdcli'
+          // transfer track to netmd
+          netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file, trackTitle])
+        }
         netmdcli.on('close', (code) => {
           if (code === 0) {
-            console.log('netmdcli send returned Success code ' + code)
+            console.log(cliname + ' send returned Success code ' + code)
             bus.$emit('track-sent')
             resolve()
           } else {
-            console.log('netmdcli error, returned ' + code)
+            console.log(cliname + ' error, returned ' + code)
             reject(code)
           }
           this.progress = 'Idle'
+          bus.$emit('netmd-status', { progress: 'Idle' })
         })
         netmdcli.on('error', (error) => {
-          console.log(`netmdcli send errored with error ${error}`)
+          console.log(cliname + ` send errored with error ${error}`)
           reject(error)
         })
         // we get a fair bit of useful progress data returned here for debugging
@@ -439,6 +464,7 @@ export default {
           console.log(output)
           if (output.includes('%) transferred')) {
             this.progress = 'Transferring ' + output.split('bytes (').pop().split(') transferred')[0]
+            bus.$emit('netmd-status', { progress: 'Receiving ' + trackTitle })
           }
         })
       })
@@ -461,16 +487,6 @@ export default {
       this.selectedTrackSource.artist = this.selectedTrack.artist
     },
     /**
-      * Make sure temp directory actually exists, if not create it
-      */
-    ensureDirSync: function (dirpath) {
-      try {
-        fs.mkdirSync(dirpath, { recursive: true })
-      } catch (err) {
-        if (err.code !== 'EEXIST') throw err
-      }
-    },
-    /**
       * Read-in config file
       */
     readConfig: function () {
@@ -479,6 +495,15 @@ export default {
       }
       if (store.has('conversionMode')) {
         this.conversionMode = store.get('conversionMode')
+      }
+      if (store.has('sonicStageNosStrip')) {
+        this.sonicStageNosStrip = store.get('sonicStageNosStrip')
+      }
+      if (store.has('mode')) {
+        this.mode = store.get('mode')
+      }
+      if (store.has('himdPath')) {
+        this.himdPath = store.get('himdPath')
       }
     }
   }

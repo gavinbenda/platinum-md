@@ -56,6 +56,13 @@
           "filter": [
             "**/*"
           ]
+        },
+        {
+          "from": "resources/netmd-py",
+          "to": "Resources/netmd-py",
+          "filter": [
+            "**/*"
+          ]
         }
       ]
     },
@@ -65,6 +72,13 @@
         {
           "from": "resources/win/bin",
           "to": "Resources/bin",
+          "filter": [
+            "**/*"
+          ]
+        },
+        {
+          "from": "resources/netmd-py",
+          "to": "Resources/netmd-py",
           "filter": [
             "**/*"
           ]
@@ -90,24 +104,26 @@
     "@fortawesome/free-solid-svg-icons": "^5.10.1",
     "@fortawesome/vue-fontawesome": "^0.1.6",
     "app-root-dir": "^1.0.2",
-    "axios": "^0.18.0",
+    "axios": "^0.21.1",
     "bootstrap": "^4.3.1",
     "bootstrap-vue": "^2.0.2",
     "electron-store": "^4.0.0",
+    "eslint-plugin-vue": "^6.2.2",
     "ffi-napi": "^2.3.0",
     "ffmpeg-static-electron": "^2.0.1",
     "file-type": "^12.1.0",
     "fluent-ffmpeg": "^2.1.2",
+    "fs-extra": "^8.0.0",
     "jquery": "^3.5.0",
     "music-metadata": "^6.3.7",
+    "python-shell": "^2.0.2",
     "read-chunk": "^3.2.0",
     "usb-detection": "^4.10.0",
     "vue": "^2.5.16",
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
-    "vuex-electron": "^1.0.0",
-    "fs-extra": "^8.0.0"
+    "vuex-electron": "^1.0.0"
   },
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.10.1",
@@ -121,15 +137,16 @@
     "babel-preset-env": "^1.7.0",
     "babel-preset-stage-0": "^6.24.1",
     "babel-register": "^6.26.0",
-    "cfonts": "^2.1.2",
+    "cfonts": "^2.8.6",
     "chai": "^4.1.2",
-    "chalk": "^2.4.1",
+    "chalk": "^2.4.2",
+    "check-disk-space":"^2.1.0",
     "copy-webpack-plugin": "^4.5.1",
     "cross-env": "^5.1.6",
     "css-loader": "^0.28.11",
     "del": "^5.1.0",
     "devtron": "^1.4.0",
-    "electron": "^2.0.4",
+    "electron": "^2.0.18",
     "electron-builder": "^22.4.1",
     "electron-debug": "^1.5.0",
     "electron-devtools-installer": "^2.2.4",
