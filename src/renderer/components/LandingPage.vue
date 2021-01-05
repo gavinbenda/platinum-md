@@ -1,53 +1,69 @@
 <template>
   <div id="wrapper" class="p-3">
 
-    <b-modal @ok="saveSettings" ref="settings-modal" title="Settings">
-      <b-form-group label="Mode:">
-        <b-form-radio v-model="mode" name="mode-md" value='md'>MD</b-form-radio>
-        <b-form-radio v-model="mode" name="mode-himd" value='himd'>Hi-MD</b-form-radio>
-      </b-form-group>
-      <hr />
-      <b-form-group v-if="mode === 'himd'">
-        <p><b>Hi-MD functionality is experimental - ONLY USE FOR DISCS YOU ARE PREPARED TO ERASE</b> - in some cases himd functionality can corrupt the disc which prevents reading of any tracks. Only mz-rh devices are supported. Hi-SP/Hi-LP/MP3 transfers are supported from hi-md to computer, only MP3 transfers are supported to hi-md. Renaming/erasing tracks/discs is not supported for hi-md. The hi-md recorder appears as a usb drive when connected to computer, select that drive below, e.g. 'E:' or '/Volumes/NO NAME/'</p>
-        <p>HiMD Path: {{ himdPath }}</p>
-        <b-button variant="outline-primary" @click="chooseHiMDPath">Browse <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
-      </b-form-group>
-      <b-form-group v-else label="Transfer Mode:">
-        <b-form-radio v-model="conversionMode" name="mode-sp" value="SP">SP (Best quality)</b-form-radio>
-        <b-form-radio v-model="conversionMode" name="mode-lp2" value="LP2">LP2 (Acceptable Quality)</b-form-radio>
-        <b-form-radio v-model="conversionMode" name="mode-lp4" value="LP4">LP4 (Lower Quality)</b-form-radio>
-      </b-form-group>
-      <b-alert variant="success" show><b>Please note:</b> LP2/LP4 is implemented using an experimental encoder.</b-alert>
-      <hr />
-      <b>Title Format</b>
-      <p>Options: <b-badge>%title%</b-badge> <b-badge>%artist%</b-badge> <b-badge>%trackno%</b-badge></p>
-      <b-form-input v-model="titleFormat"></b-form-input>
-      <hr />
-      <b-form-checkbox type="checkbox" name="sonicstage-titles" id="sonicstage-titles" v-model="sonicStageNosStrip">Strip SonicStage track numbers from titles (e.g 001-Title)</b-form-checkbox>
-      <hr />
-      <template v-if="(mode === 'himd') || rh1">
-        <b v-if="mode === 'md'">RH1 Download Options</b>
-        <b v-if="mode === 'himd'">Hi-MD Download Options</b>
-        <b-form-group label="Save downloaded tracks as:">
-          <b-form-radio v-model="downloadFormat" name="WAV" value="WAV">WAV</b-form-radio>
-          <b-form-radio v-model="downloadFormat" name="FLAC" value="FLAC">FLAC</b-form-radio>
-          <b-form-radio v-model="downloadFormat" name="MP3" value="MP3">MP3 (320kbs)</b-form-radio>
-          <b-form-radio v-model="downloadFormat" name="RAW" value="RAW">AEA/AT3 (Do not convert audio)</b-form-radio>
-        </b-form-group>
-        <b-form-checkbox type="checkbox" name="use-sonicstage-nos" id="use-sonicstage-nos" v-model="useSonicStageNos">Save tracks with SonicStage style track numbers (e.g 001-Title)</b-form-checkbox>
-        <br>
-        <p>Download directory: {{ downloadDir }}</p>
-        <b-button variant="outline-primary" @click="chooseDownloadDir">Browse <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
-        <hr />
-      </template>
-
-      <b-button variant="outline-primary" @click="showDebugConsole">Debug Window</b-button>
+    <b-modal @ok="saveSettings" ref="settings-modal" title="Settings" size="lg">
+      <b-tabs content-class="mt-3" card>
+        <b-tab title="Device Mode" active>
+          <b>Mode:</b>
+          <b-form-group>
+            <b-form-radio v-model="mode" name="mode-md" value='md'>MD</b-form-radio>
+            <b-form-radio v-model="mode" name="mode-himd" value='himd'>Hi-MD</b-form-radio>
+          </b-form-group>
+          <hr />
+          <p><b>HiMD Path:</b> <b-badge>{{ himdPath }}</b-badge></p>
+          <b-button variant="primary" @click="chooseHiMDPath">Choose Hi-MD Path <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
+          <b-alert variant="info" show class="mt-3">
+            The Hi-MD recorder appears as a usb drive when connected to computer, select that drive below, e.g. <pre class="badge badge-dark mb-0">'E:'</pre> or <pre class="badge badge-dark mb-0">'/Volumes/NO NAME/'</pre>
+          </b-alert>
+          <b-alert variant="danger" show class="mt-3">
+            <b>Hi-MD functionality is experimental - ONLY USE FOR DISCS YOU ARE PREPARED TO ERASE</b><br />
+            In some cases Hi-MD functionality can corrupt the disc which prevents reading of any tracks.<br />
+            Hi-SP/Hi-LP/MP3 transfers are supported from Hi-MD to computer, only MP3 transfers are supported to Hi-MD.<br >
+            Renaming/erasing tracks/discs is not supported for Hi-MD.
+          </b-alert>
+        </b-tab>
+        <b-tab title="MD Options">
+          <b>Transfer Mode</b>
+          <b-form-group>
+            <b-form-radio v-model="conversionMode" name="mode-sp" value="SP">SP (Best quality)</b-form-radio>
+            <b-form-radio v-model="conversionMode" name="mode-lp2" value="LP2">LP2 (Acceptable Quality)</b-form-radio>
+            <b-form-radio v-model="conversionMode" name="mode-lp4" value="LP4">LP4 (Lower Quality)</b-form-radio>
+          </b-form-group>
+          <b-alert variant="info" show><b>Please note:</b> LP2/LP4 is implemented using an experimental encoder.</b-alert>
+        </b-tab>
+        <b-tab title="Hi-MD Options">
+          <p><b>Download directory:</b> <b-badge>{{ downloadDir }}</b-badge></p>
+          <b-button variant="primary" @click="chooseDownloadDir">Choose Download Directory <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
+          <hr />
+          <b>File format to transfer tracks to computer:</b>
+          <b-form-group>
+            <b-form-radio v-model="downloadFormat" name="download-wav" value="WAV">WAV</b-form-radio>
+            <b-form-radio v-model="downloadFormat" name="download-flac" value="FLAC">FLAC</b-form-radio>
+            <b-form-radio v-model="downloadFormat" name="download-mp3" value="MP3">MP3 (320kbs)</b-form-radio>
+            <b-form-radio v-model="downloadFormat" name="download-raw" value="RAW">AEA/AT3 (Do not convert audio)</b-form-radio>
+          </b-form-group>
+          <hr />
+          <b-form-checkbox type="checkbox" name="use-sonicstage-nos" id="use-sonicstage-nos" v-model="useSonicStageNos">Save tracks with SonicStage style track numbers (e.g 001-Title)</b-form-checkbox>
+          <b-alert variant="info" show class="mt-3">
+            Some functionality for downloading tracks back to your computer will only work with an MZ-RH1. Original self-recorded material should work on other Hi-MD devices.
+          </b-alert>
+        </b-tab>
+        <b-tab title="Track Titling">
+          <b>Title Format</b>
+          <p>Options: <b-badge>%title%</b-badge> <b-badge>%artist%</b-badge> <b-badge>%trackno%</b-badge></p>
+          <b-form-input v-model="titleFormat"></b-form-input>
+          <hr />
+          <b-form-checkbox type="checkbox" name="sonicstage-titles" id="sonicstage-titles" v-model="sonicStageNosStrip">Strip SonicStage track numbers from titles (e.g 001-Title)</b-form-checkbox>
+        </b-tab>
+        <b-tab title="Help">
+          <b-button variant="primary" @click="showDebugConsole">Show Debug Window</b-button>
+        </b-tab>
+      </b-tabs>
     </b-modal>
 
     <b-container fluid>
       <b-row>
         <b-col cols="6"><img id="logo" src="~@/assets/logo.svg" alt="Platinum MD" class="p-3"></b-col>
-        <p><b>Experimental deenine Hi-MD Build 0.0.2</b></p>
         <b-col v-if="mode === 'md'" class="text-center"><control-bar></control-bar></b-col>
         <b-col class="text-right p-3"><b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button></b-col>
       </b-row>
@@ -87,9 +103,9 @@
         useSonicStageNos: true,
         rh1: false,
         mode: 'md',
-        downloadFormat: 'FLAC',
+        downloadFormat: 'WAV',
         downloadDir: homedir + '/pmd-music/',
-        himdPath: '/Users/Doug/workspace/linux-minidisc/testdata/himd/'
+        himdPath: '/Volumes/NO NAME/'
       }
     },
     created () {
