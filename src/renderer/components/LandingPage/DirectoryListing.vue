@@ -227,7 +227,8 @@ export default {
                     format: fileTypeInfo.ext,
                     bitrate: (bitrate !== null) ? Math.round(bitrate / 1000) + 'kbps' : '-',
                     codec: (codec !== null) ? codec : '',
-                    time: time
+                    time: time,
+                    no_metadata: metadata.common.title
                   })
                 })
                 .catch(err => {
@@ -319,11 +320,14 @@ export default {
           // !SP and !LP, so must be hi-md - Convert to MP3
           finalFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.mp3')
           if (fileExtension.toLowerCase() === '.mp3') {
+            // file is already a mp3, no need to convert
             // Strip id3v2 tag because it can cause tracks to be unplayable on device
             await stripID3(sourceFile, finalFile)
           } else {
+            // file is not mp3
             this.progress = 'Converting to Mp3'
-            await convertAudio(sourceFile, finalFile, 'MP3')
+            let title = (selectedFile.no_metadata === undefined) ? selectedFile.title : null
+            await convertAudio(sourceFile, finalFile, 'MP3', title)
           }
         }
         resolve(finalFile)
