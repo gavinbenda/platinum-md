@@ -22,7 +22,7 @@
           <b-col>
             <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
             <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }} <font-awesome-icon icon="edit"></font-awesome-icon></a></b-badge>
-            <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
+            <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Available</b-badge>
             <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle' && progress != 'Disc Full'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
           </b-col>
           <b-col class="text-right">
