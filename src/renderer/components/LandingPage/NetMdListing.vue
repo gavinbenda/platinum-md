@@ -82,7 +82,7 @@
 
       <template v-slot:overlay>
         <div class="text-center">
-          <div v-if="communicating && mode == 'md'">
+          <div v-if="communicating">
             <b-spinner varient="success" label="Spinner" variant="success"></b-spinner>
             <span v-if="deviceName"><p id="cancel-label" class="mt-2">Negotiating with {{ deviceName }}...</p></span><span v-else="deviceName"><p id="cancel-label" class="mt-2">Negotiating with device...</p></span>
           </div>
@@ -324,6 +324,7 @@ export default {
             this.info.device = ''
             this.info.availableTime = ''
             this.info.title = ''
+            this.communicating = false
             console.log('no devices found')
             let errorMessage = { message: 'No NetMD devices found' }
             reject(errorMessage)
@@ -331,6 +332,7 @@ export default {
             this.info.device = ''
             this.info.availableTime = ''
             this.info.title = ''
+            this.communicating = false
             let errorMessage = { message: 'Cannot open himd directory' }
             reject(errorMessage)
           } else {
