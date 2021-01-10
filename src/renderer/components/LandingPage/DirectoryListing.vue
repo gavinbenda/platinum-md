@@ -440,13 +440,14 @@ export default {
         } else {
           cliname = 'netmdcli'
           // transfer track to netmd
-          netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file, trackTitle])
+          netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file])
         }
         netmdcli.on('close', (code) => {
           if (code === 0) {
             console.log(cliname + ' send returned Success code ' + code)
             bus.$emit('track-sent')
-            resolve()
+            // timeout to let readnetmd complete before starting next transfer
+            resolve(new Promise(async (resolve, reject) => setTimeout(resolve, 1500)))
           } else {
             console.log(cliname + ' error, returned ' + code)
             reject(code)

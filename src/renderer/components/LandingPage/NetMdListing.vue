@@ -82,19 +82,27 @@
 
       <template v-slot:overlay>
         <div class="text-center">
-          <div v-if="communicating">
+          <div v-if="(communicating && deviceMode == 'himd' && mode == 'himd') || (communicating && deviceMode == 'md' && mode == 'md')">
             <b-spinner varient="success" label="Spinner" variant="success"></b-spinner>
             <span v-if="deviceName"><p id="cancel-label" class="mt-2">Negotiating with {{ deviceName }}...</p></span><span v-else="deviceName"><p id="cancel-label" class="mt-2">Negotiating with device...</p></span>
           </div>
           <div v-if="communicating == false && mode == 'md'">
           <font-awesome-icon icon="headphones" size="5x"></font-awesome-icon>
-            <p id="cancel-label" class="mt-2">Device not detected.<br />Please connect/reconnect device to continue.</p>
+            <p id="cancel-label" class="mt-2"><b>NetMD device not detected.</b><br />Please connect/reconnect device to continue.</p>
+          </div>
+          <div v-if="communicating == false && mode == 'himd'">
+          <font-awesome-icon icon="headphones" size="5x"></font-awesome-icon>
+            <p id="cancel-label" class="mt-2"><b>HiMD Device not detected, or cannot open path: {{ himdPath }} </b><br />Please connect/reconnect device to continue.</p>
           </div>
           <div v-if="deviceMode == 'himd' && mode == 'md'">
-            <font-awesome-icon icon="headphones" size="5x"></font-awesome-icon>
             <p id="cancel-label" class="mt-2"><b>HiMD device detected</b></p>
             <p id="cancel-label" class="mt-2">To use netmd, change device mode to MD/reformat disc to MD. </p>
             <p id="cancel-label" class="mt-2">To use HiMD, select 'Hi-MD' mode in platinum-md Settings menu.</p>
+            <p id="cancel-label" class="mt-2">Sometimes this can appear if swapping between MD/HiMD discs without unplugging/replugging device - if you belive this to be incorrect, try unplugging/replugging</p>
+          </div>
+          <div v-if="deviceMode == 'md' && mode == 'himd'">
+            <p id="cancel-label" class="mt-2"><b>NetMD device detected</b></p>
+            <p id="cancel-label" class="mt-2">To use NetMD, select 'MD' mode in platinum-md Settings menu.</p>
             <p id="cancel-label" class="mt-2">Sometimes this can appear if swapping between MD/HiMD discs without unplugging/replugging device - if you belive this to be incorrect, try unplugging/replugging</p>
           </div>
           <b-button
@@ -180,6 +188,7 @@ export default {
       }
       if ('progress' in data) {
         this.progress = data.progress
+        console.log('progress ' + this.progress)
       }
     })
     bus.$on('track-action', (data) => {
