@@ -440,7 +440,7 @@ export default {
         } else {
           cliname = 'netmdcli'
           // transfer track to netmd
-          netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file])
+          netmdcli = require('child_process').spawn(netmdcliPath, ['-v', 'send', file, trackTitle])
         }
         netmdcli.on('close', (code) => {
           if (code === 0) {
