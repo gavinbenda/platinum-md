@@ -99,7 +99,7 @@
                   </b-button-group>
                 </b-button-toolbar>
               </b-col>
-              <b-col class="text-left" >
+              <b-col class="text-left no-linewrap">
                 <b-badge variant="dark" class="text-uppercase">Status:</b-badge><br />
                 <div class="status-msg">{{ progress }}</div>
               </b-col>

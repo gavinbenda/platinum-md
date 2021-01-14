@@ -33,9 +33,9 @@
         <b-col cols="1">
           <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
         </b-col>
-        <b-col>
+        <b-col class="no-linewrap">
           <b>{{ selected.length }}</b> tracks selected.<br />
-          <b-button variant="link" class="p-0 m-0" @click="chooseDir"><b-badge class="text-uppercase no-linewrap">{{ dir }}</b-badge></b-button>
+          <b-button variant="link" class="p-0 m-0" @click="chooseDir"><b-badge class="text-uppercase">{{ dir }}</b-badge></b-button>
         </b-col>
         <b-col class="text-right" cols="auto">
           <b-button variant="primary" @click="chooseDir">Folder <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
