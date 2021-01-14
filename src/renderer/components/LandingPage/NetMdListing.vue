@@ -21,11 +21,11 @@
           </b-col>
           <b-col>
             <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
-            <b-badge class="text-uppercase" v-if="info.title !== ''"><a @click="showRenameDiscModal">{{ info.title }} <font-awesome-icon icon="edit"></font-awesome-icon></a></b-badge>
+            <b-button variant="link" class="p-0 m-0" @click="showRenameDiscModal"><b-badge class="text-uppercase" variant="primary" v-if="info.title !== ''">{{ info.title }} <font-awesome-icon icon="edit"></font-awesome-icon></b-badge></b-button>
             <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
-            <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle' && progress != 'Disc Full'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span>
+            <!--b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle' && progress != 'Disc Full'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase">Status: {{ progress }}</b-badge></span-->
           </b-col>
-          <b-col class="text-right">
+          <b-col class="text-right" cols="auto">
             <b-button variant="success" @click="downloadTracks" v-show=download :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
             <b-button v-if="mode === 'md'" variant="danger" @click="deleteSelectedTracks" :disabled="isBusy"><font-awesome-icon icon="times"></font-awesome-icon></b-button>
             <b-dropdown v-if="mode === 'md'" class="danger my-0 py-0">
@@ -160,11 +160,9 @@ export default {
         } else {
           this.showOverlay = false
         }
-        if (data.eventType === 'busy' || data.eventType === 'no-connection') {
-          this.isBusy = true
-        } else {
-          this.isBusy = false
-        }
+      }
+      if ('isBusy' in data) {
+        this.isBusy = data.isBusy
       }
       if ('deviceName' in data) {
         this.download = (data.deviceName === 'Sony MZ-RH1') || (this.mode === 'himd')
@@ -447,7 +445,7 @@ export default {
     downloadTracks: async function () {
       // if button is clicked but nothing is selected, do nothing
       if (this.selected.length < 1) return
-      bus.$emit('netmd-status', { eventType: 'busy' })
+      bus.$emit('netmd-status', { isBusy: true })
       // local copy of selected, otherwise this is undefined by the second iteration of the loop
       var selectedTracks
       var downloadPath = this.downloadDir

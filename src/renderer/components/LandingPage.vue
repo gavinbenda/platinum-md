@@ -63,9 +63,60 @@
 
     <b-container fluid>
       <b-row>
-        <b-col cols="6"><img id="logo" src="~@/assets/logo.svg" alt="Platinum MD" class="p-3"></b-col>
-        <b-col v-if="mode === 'md'" class="text-center"><control-bar></control-bar></b-col>
-        <b-col class="text-right p-3"><b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button></b-col>
+        <b-col><img id="logo" src="~@/assets/logo.svg" alt="Platinum MD" class="px-3 mt-3"></b-col>
+        <b-col class="text-center mt-1" cols="7">
+          <div id="unified-controls" class="py-2 px-3">
+            <b-row>
+              <b-col cols="auto">
+                <b-button-toolbar key-nav aria-label="Toolbar for selecting modes">
+                  <b-button-group class="mx-1">
+                    <b-form-radio-group
+                    id="btn-radios-3"
+                    v-model="mode"
+                    :options="modeOptions"
+                    name="radio-btn-stacked"
+                    button-variant="dark"
+                    buttons
+                  ></b-form-radio-group>
+                  </b-button-group>
+                  <b-button-group class="mx-1" v-if="mode === 'md'">
+                    <b-form-radio-group
+                    v-model="conversionMode"
+                    :options="conversionModeOptions"
+                    name="radio-btn-stacked"
+                    button-variant="dark"
+                    buttons
+                  ></b-form-radio-group>
+                  </b-button-group>
+                  <b-button-group class="mx-1" v-if="mode === 'himd'">
+                    <b-form-radio-group
+                    v-model="conversionModeHimd"
+                    :options="conversionModeHimdOptions"
+                    name="radio-btn-stacked"
+                    button-variant="dark"
+                    buttons
+                  ></b-form-radio-group>
+                  </b-button-group>
+                </b-button-toolbar>
+              </b-col>
+              <b-col class="text-left" >
+                <b-badge variant="dark" class="text-uppercase">Status:</b-badge><br />
+                <div class="status-msg">{{ progress }}</div>
+              </b-col>
+              <b-col cols="auto">
+                <control-bar v-if="mode === 'md'"></control-bar>
+              </b-col>
+            </b-row>
+            <b-progress :value="progress" :animated="isBusy" variant="success" show-progress class="mt-2">
+              <b-progress-bar :value="progressPercent" v-if="progress != 'Idle' && progress != 'Disc Full'">
+                <span>{{ progressPercent }}</span>
+              </b-progress-bar>
+            </b-progress>
+          </div>
+        </b-col>
+        <b-col class="text-right p-3">
+          <b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button>
+        </b-col>
       </b-row>
     </b-container>
 
@@ -97,7 +148,9 @@
     components: { DirectoryListing, NetMdListing, ControlBar },
     data () {
       return {
+        isBusy: false,
         conversionMode: 'SP',
+        conversionModeHimd: 'MP3',
         titleFormat: '%title% - %artist%',
         sonicStageNosStrip: true,
         useSonicStageNos: true,
@@ -105,7 +158,21 @@
         mode: 'md',
         downloadFormat: 'WAV',
         downloadDir: homedir + '/pmd-music/',
-        himdPath: '/Volumes/NO NAME/'
+        himdPath: '/Volumes/NO NAME/',
+        progress: 'Idle',
+        progressPercent: 100,
+        modeOptions: [
+          { text: 'MD', value: 'md' },
+          { text: 'Hi-MD', value: 'himd' }
+        ],
+        conversionModeOptions: [
+          { text: 'SP', value: 'SP' },
+          { text: 'LP2', value: 'LP2' },
+          { text: 'LP4', value: 'LP4' }
+        ],
+        conversionModeHimdOptions: [
+          { text: 'MP3', value: 'MP3' }
+        ]
       }
     },
     created () {
@@ -115,6 +182,15 @@
       bus.$on('netmd-status', (data) => {
         if ('deviceName' in data) {
           this.rh1 = ((data.deviceName === 'Sony MZ-RH1') || (this.mode === 'himd'))
+        }
+        if ('progress' in data) {
+          this.progress = data.progress
+        }
+        if ('progressPercent' in data) {
+          this.progressPercent = data.progressPercent
+        }
+        if ('isBusy' in data) {
+          this.isBusy = data.isBusy
         }
       })
     },
@@ -201,6 +277,16 @@
             this.himdPath = store.get('downloadDir')
           }
         })
+      }
+    },
+    watch: {
+      mode: function () {
+        this.saveSettings()
+        bus.$emit('config-update')
+      },
+      conversionMode: function () {
+        this.saveSettings()
+        bus.$emit('config-update')
       }
     }
   }

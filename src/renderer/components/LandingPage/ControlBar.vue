@@ -1,13 +1,13 @@
 <template>
-  <div class="p-3">
-  
-    <b-button pill variant="primary" @click="runAction('play')"><font-awesome-icon icon="play"></font-awesome-icon></b-button>
-    <b-button pill variant="dark" @click="runAction('pause')"><font-awesome-icon icon="pause"></font-awesome-icon></b-button>
-    <b-button pill variant="dark" @click="runAction('stop')"><font-awesome-icon icon="stop"></font-awesome-icon></b-button>
-    <b-button pill variant="dark" @click="runAction('previous')"><font-awesome-icon icon="backward"></font-awesome-icon></b-button>
-    <b-button pill variant="dark" @click="runAction('next')"><font-awesome-icon icon="forward"></font-awesome-icon></b-button>
- 
-  </div>
+  <b-button-toolbar aria-label="Toolbar for playing tracks">
+    <b-button-group class="mx-1">
+      <b-button variant="success" @click="runAction('play')"><font-awesome-icon icon="play"></font-awesome-icon></b-button>
+      <b-button variant="dark" @click="runAction('pause')"><font-awesome-icon icon="pause"></font-awesome-icon></b-button>
+      <b-button variant="dark" @click="runAction('stop')"><font-awesome-icon icon="stop"></font-awesome-icon></b-button>
+      <b-button variant="dark" @click="runAction('previous')"><font-awesome-icon icon="backward"></font-awesome-icon></b-button>
+      <b-button variant="dark" @click="runAction('next')"><font-awesome-icon icon="forward"></font-awesome-icon></b-button>
+    </b-button-group>
+  </b-button-toolbar>
 </template>
 
 <script>
@@ -23,8 +23,3 @@ export default {
   }
 }
 </script>
-next - starts next track
-previous - starts previous track
-restart - restarts current track
-pause - pause the unit
-stop - stop the unit

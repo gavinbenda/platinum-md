@@ -34,11 +34,10 @@
           <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
         </b-col>
         <b-col>
-          {{ this.dir }}<br />
-          <b>{{ selected.length }}</b> tracks selected {{ conversionMode }}<br />
-          <b-spinner small varient="success" label="Small Spinner" v-if="progress != 'Idle' && progress != 'Disc Full'"></b-spinner> <span v-if="progress"><b-badge class="text-uppercase"><span v-if="progress != 'Idle'">{{ processing }} - {{ selected.length }} / </span>Status: {{ progress }}</b-badge></span>
+          <b>{{ selected.length }}</b> tracks selected.<br />
+          <b-button variant="link" class="p-0 m-0" @click="chooseDir"><b-badge class="text-uppercase no-linewrap">{{ dir }}</b-badge></b-button>
         </b-col>
-        <b-col class="text-right">
+        <b-col class="text-right" cols="auto">
           <b-button variant="primary" @click="chooseDir">Folder <font-awesome-icon icon="folder-open"></font-awesome-icon></b-button>
           <b-button variant="success" @click="upload" :disabled="isBusy">Transfer <font-awesome-icon icon="angle-double-right"></font-awesome-icon></b-button>
         </b-col>
@@ -116,7 +115,8 @@ export default {
       files: [],
       file: '',
       progress: 'Idle',
-      isBusy: true,
+      progressPercent: 0,
+      isBusy: false,
       fields: [
         { key: 'trackNo', sortable: true, label: 'No' },
         { key: 'title', sortable: true },
@@ -148,16 +148,15 @@ export default {
   mounted () {
     this.readDirectory()
     bus.$on('config-update', () => {
+      console.log('config-update recieved.')
       this.readConfig()
     })
     bus.$on('netmd-status', (data) => {
       if ('eventType' in data) {
         console.log(data.eventType)
-        if (data.eventType === 'busy' || data.eventType === 'no-connection') {
-          this.isBusy = true
-        } else {
-          this.isBusy = false
-        }
+      }
+      if ('isBusy' in data) {
+        this.isBusy = data.isBusy
       }
       if ('freeSpace' in data) {
         this.freeSpace = data.freeSpace
@@ -184,7 +183,7 @@ export default {
       * TODO: there should be more promises used here
       */
     readDirectory: function () {
-      this.isBusy = true
+      bus.$emit('netmd-status', { isBusy: true })
       this.files = []
       // read the target directory
       console.log(this.dir)
@@ -240,7 +239,7 @@ export default {
         // this.files = dir
         if (err) { console.log(err) }
       })
-      this.isBusy = false
+      bus.$emit('netmd-status', { isBusy: false })
     },
     /**
       * Track which rows are selected
@@ -256,7 +255,7 @@ export default {
       // loop through each selected track one-by-one
       for (var i = 0, len = this.selected.length; i < len; i++) {
         console.log('Processing track: ' + i)
-        bus.$emit('netmd-status', { eventType: 'busy' })
+        bus.$emit('netmd-status', { isBusy: true })
         // create a temp directory for working files
         // TODO: maybe some automated cleanup?
         this.processing = i + 1
@@ -273,7 +272,7 @@ export default {
         let trackTitle = (this.selected[i].artist !== 'No Artist') ? this.selected[i].title + ' - ' + this.selected[i].artist : this.selected[i].title
         console.log('Conversion Complete: ' + finalFile)
         await this.sendToPlayer(finalFile, trackTitle)
-        bus.$emit('netmd-status', { eventType: 'transfer-completed' })
+        bus.$emit('netmd-status', { eventType: 'transfer-completed', isBusy: false })
       }
       // Clean up
       const deletedPaths = await del.sync([this.dir + this.tempDirectory], {force: true})
@@ -298,7 +297,7 @@ export default {
         // The encoding process is handled by the NetMD device
         console.log('Starting conversion in <' + this.conversionMode + '> mode')
         if (this.conversionMode === 'SP') {
-          this.progress = 'Converting to Wav'
+          bus.$emit('netmd-status', { progress: 'Converting to Wav' })
           await convertAudio(sourceFile, finalFile, fileExtension)
         // uploading as LP2
         // This uses an experimental ATRAC3 encoder
@@ -325,7 +324,7 @@ export default {
             await stripID3(sourceFile, finalFile)
           } else {
             // file is not mp3
-            this.progress = 'Converting to Mp3'
+            bus.$emit('netmd-status', { progress: 'Converting to MP3' })
             let title = (selectedFile.no_metadata === undefined) ? selectedFile.title : null
             await convertAudio(sourceFile, finalFile, 'MP3', title)
           }
@@ -338,7 +337,7 @@ export default {
       * TODO: this is the longest part of the process, some user progress % feedback would be nice...
       */
     convertToAtrac: async function (source, dest) {
-      this.progress = 'Converting to Atrac'
+      bus.$emit('netmd-status', { progress: 'Converting to ATRAC', progressPercent: 0 })
       console.log('Converting to atrac')
       return new Promise(async (resolve, reject) => {
         // spawn this task and resolve promise on close
@@ -358,7 +357,7 @@ export default {
         atracdenc.stdout.on('data', data => {
           var output = data.toString()
           console.log(data.toString())
-          this.progress = 'Converting to Atrac ' + output.substr(3, 3)
+          bus.$emit('netmd-status', { progress: 'Converting to ATRAC', progressPercent: output.substr(3, 3) })
         })
       })
     },
@@ -367,7 +366,7 @@ export default {
       * This is required to be able to send using netmdcli
       */
     convertToWavWrapper: async function (source, dest) {
-      this.progress = 'Adding Wav Wrapper'
+      bus.$emit('netmd-status', { progress: 'Adding Wav Wrapper' })
       return new Promise(async (resolve, reject) => {
         ffmpeg(source)
           .output(dest)
@@ -393,7 +392,7 @@ export default {
       * The filename is named {title} - {artist}
       */
     sendToPlayer: async function (file, trackTitle) {
-      this.progress = 'Sending to Player'
+      bus.$emit('netmd-status', { progress: 'Sending to Player' })
       if (this.mode === 'md') {
         console.log('Attempting to send to NetMD device')
       } else {
@@ -426,7 +425,6 @@ export default {
           let size = fs.statSync(file).size
           if (size > this.freeSpace) {
             console.log('ERROR: track ' + file + ' larger than free space on himd device')
-            this.progress = 'Disc Full'
             bus.$emit('netmd-status', { progress: 'Disc Full' })
             return (Error('Disc Full'))
           } else {
@@ -434,8 +432,7 @@ export default {
             console.log(himdcliPath + ' ' + this.himdPath + ' writemp3 ' + file)
             netmdcli = require('child_process').spawn(himdcliPath, [this.himdPath, 'writemp3', file])
             // himdcli doesnt provide status updates, so set status instead of waiting on output
-            this.progress = 'Transferring ' + trackTitle
-            bus.$emit('netmd-status', { progress: 'Receiving ' + trackTitle })
+            bus.$emit('netmd-status', { progress: 'Transferring: ' + trackTitle, progressPercent: '50' })
           }
         } else {
           cliname = 'netmdcli'
@@ -451,7 +448,6 @@ export default {
             console.log(cliname + ' error, returned ' + code)
             reject(code)
           }
-          this.progress = 'Idle'
           bus.$emit('netmd-status', { progress: 'Idle' })
         })
         netmdcli.on('error', (error) => {
@@ -463,8 +459,7 @@ export default {
           var output = data.toString()
           console.log(output)
           if (output.includes('%) transferred')) {
-            this.progress = 'Transferring ' + output.split('bytes (').pop().split(') transferred')[0]
-            bus.$emit('netmd-status', { progress: 'Receiving ' + trackTitle })
+            bus.$emit('netmd-status', { progress: 'Transferring: ' + trackTitle, progressPercent: output.split('bytes (').pop().split(') transferred')[0] })
           }
         })
       })
