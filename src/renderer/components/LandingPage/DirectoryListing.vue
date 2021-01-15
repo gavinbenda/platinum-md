@@ -34,7 +34,7 @@
           <b-button variant="outline-light" @click="readDirectory" :disabled="isBusy"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
         </b-col>
         <b-col class="no-linewrap">
-          <b>{{ selected.length }}</b> tracks selected.<br />
+          <b>{{ selected.length }}</b> tracks selected ({{ selectedTrackTime | timeFormat }}).<br />
           <b-button variant="link" class="p-0 m-0" @click="chooseDir"><b-badge class="text-uppercase">{{ dir }}</b-badge></b-button>
         </b-col>
         <b-col class="text-right" cols="auto">
@@ -500,6 +500,23 @@ export default {
       if (store.has('himdPath')) {
         this.himdPath = store.get('himdPath')
       }
+    },
+    /**
+    * Calculate selected track time total
+    */
+    getSelectedTrackTime: function () {
+      return this.selected.reduce((acc, data) => {
+        console.log(data.time)
+        return acc + data.time
+      }, 0)
+    }
+  },
+  /**
+  * Computed property to return total time
+  */
+  computed: {
+    selectedTrackTime: function () {
+      return this.getSelectedTrackTime()
     }
   }
 }
