@@ -181,7 +181,7 @@
     mounted () {
       bus.$on('netmd-status', (data) => {
         if ('deviceName' in data) {
-          this.rh1 = ((data.deviceName === 'Sony MZ-RH1') || (this.mode === 'himd'))
+          this.rh1 = ((data.deviceName === 'Sony MZ-RH1 MD') || (this.mode === 'himd'))
         }
         if ('progress' in data) {
           this.progress = data.progress

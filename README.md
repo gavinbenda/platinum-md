@@ -93,10 +93,11 @@ Please report any bugs using the GitHub Issues feature.
 ## Known bugs / future Plans
 
 * Some pre-recorded discs made with SonicStage may show as blank
+* Transfering tracks to MZ-NH700 (and possibly other Hi-MD devices) in NetMD mode fails when using a blank disc formatted as MD using a Hi-MD device. This is a bug in linux-minidisc. To work around this issue, format the disc in a non-himd recorder, or record a short track onto the disc using the NH700 and hit stop to save TOC, eject and power off the device, then insert disc and connect to computer.
+* Some devices sometimes incorrectly show no tracks on disc, if this occurs clic refresh on the netmd pane. If the issue persists unplug the device from the computer, eject the disk and power down the device, then retry.
 * Automatic CLI tools for installing dependancies is highly desirable
 * The USB interface sometimes just fails, this is hard to fix as it seems to be the device itself (just unplug/plug-in again)
 * LP2 is experimental, in my experience some tracks may have a slight hiss... this is an upstream issue.
-* There seems to be an issue with some Minidisc full size "Decks", this is also an upstream issue with linux-minidisc.
 
 
 ## Thanks

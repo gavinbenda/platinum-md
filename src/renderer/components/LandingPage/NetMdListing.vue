@@ -80,15 +80,29 @@
       </b-table>
 
       <template v-slot:overlay>
-
         <div class="text-center">
-          <div v-if="communicating">
+          <div v-if="(communicating && deviceMode == 'himd' && mode == 'himd') || (communicating && deviceMode == 'md' && mode == 'md')">
             <b-spinner varient="success" label="Spinner" variant="success"></b-spinner>
-            <p id="cancel-label" class="mt-2">Negotiating with device...</p>
+            <span v-if="deviceName"><p id="cancel-label" class="mt-2">Negotiating with {{ deviceName }}...</p></span><span v-else="deviceName"><p id="cancel-label" class="mt-2">Negotiating with device...</p></span>
           </div>
-          <div v-else>
+          <div v-if="communicating == false && mode == 'md'">
           <font-awesome-icon icon="headphones" size="5x"></font-awesome-icon>
-            <p id="cancel-label" class="mt-2">Device not detected.<br />Please connect/reconnect device to continue.</p>
+            <p id="cancel-label" class="mt-2"><b>NetMD device not detected.</b><br />Please connect/reconnect device to continue.</p>
+          </div>
+          <div v-if="communicating == false && mode == 'himd'">
+          <font-awesome-icon icon="headphones" size="5x"></font-awesome-icon>
+            <p id="cancel-label" class="mt-2"><b>HiMD Device not detected, or cannot open path: {{ himdPath }} </b><br />Please connect/reconnect device to continue.</p>
+          </div>
+          <div v-if="deviceMode == 'himd' && mode == 'md'">
+            <p id="cancel-label" class="mt-2"><b>HiMD device detected</b></p>
+            <p id="cancel-label" class="mt-2">To use netmd, change device mode to MD/reformat disc to MD. </p>
+            <p id="cancel-label" class="mt-2">To use HiMD, select 'Hi-MD' mode in platinum-md Settings menu.</p>
+            <p id="cancel-label" class="mt-2">Sometimes this can appear if swapping between MD/HiMD discs without unplugging/replugging device - if you belive this to be incorrect, try unplugging/replugging</p>
+          </div>
+          <div v-if="deviceMode == 'md' && mode == 'himd'">
+            <p id="cancel-label" class="mt-2"><b>NetMD device detected</b></p>
+            <p id="cancel-label" class="mt-2">To use NetMD, select 'MD' mode in platinum-md Settings menu.</p>
+            <p id="cancel-label" class="mt-2">Sometimes this can appear if swapping between MD/HiMD discs without unplugging/replugging device - if you belive this to be incorrect, try unplugging/replugging</p>
           </div>
           <b-button
             ref="cancel"
@@ -111,6 +125,7 @@
 import bus from '@/bus'
 import { netmdcliPath, himdcliPath } from '@/binaries'
 import { convertAudio, ensureDirSync } from '@/common'
+import { sonyVid, sharpVid, sonyMDPids, sonyHiMDPids, sharpPids } from '@/deviceIDs'
 const checkDiskSpace = require('check-disk-space')
 const usbDetect = require('usb-detection')
 const homedir = require('os').homedir()
@@ -143,7 +158,9 @@ export default {
       useSonicStageNos: true,
       progress: 'Idle',
       himdPath: '',
-      mode: 'md'
+      mode: 'md',
+      deviceMode: 'md',
+      deviceName: null
     }
   },
   mounted () {
@@ -168,6 +185,7 @@ export default {
       }
       if ('progress' in data) {
         this.progress = data.progress
+        console.log('progress ' + this.progress)
       }
     })
     bus.$on('track-action', (data) => {
@@ -182,20 +200,56 @@ export default {
     // USB auto-detection
     usbDetect.startMonitoring()
     usbDetect.on('add', async (device) => {
-      // Device is not always immediately ready, retry until ready
-      // This is not ideal.
-      this.communicating = true
+      console.log(device)
       let retries = 10
-      for (let i = 0, len = retries; i < len; i++) {
-        try {
-          await this.readNetMd()
+      let mdTimeout = 1500
+      let himdTimeout = 3000
+      switch (device.vendorId) {
+        case sonyVid:
+          if (device.productId in sonyMDPids) {
+            // Sony NetMD
+            this.deviceMode = 'md'
+            this.deviceName = sonyMDPids[device.productId]
+            console.log('Sony MD: ' + this.deviceName)
+
+            // Device is not always immediately ready, retry until ready
+            // This is not ideal.
+            this.communicating = true
+            await new Promise(async (resolve, reject) => setTimeout(resolve, 1500))
+            this.connectToDevice(retries, mdTimeout)
+          } else if (device.productId in sonyHiMDPids) {
+            // Sony HiMD
+            this.deviceMode = 'himd'
+            this.deviceName = sonyHiMDPids[device.productId]
+            console.log('Sony HiMD: ' + this.deviceName)
+
+            // Device is not always immediately ready, retry until ready
+            // This is not ideal.
+            this.communicating = true
+            await new Promise(async (resolve, reject) => setTimeout(resolve, 4000))
+            this.connectToDevice(retries, himdTimeout)
+          } else {
+            console.log('Unknown Sony product')
+          }
           break
-        } catch (err) {
-          console.log(err)
-          await new Promise(async (resolve, reject) => setTimeout(resolve, 1500))
-        }
+
+        case sharpVid:
+          // Sharp NetMD
+          if (device.productId in sharpPids) {
+            this.deviceMode = 'md'
+            this.deviceName = sharpPids[device.productId]
+            console.log('SharpMD: ' + this.deviceName)
+
+            // Device is not always immediately ready, retry until ready
+            // This is not ideal.
+            this.communicating = true
+            await new Promise(async (resolve, reject) => setTimeout(resolve, 1500))
+            this.connectToDevice(retries, mdTimeout)
+          } else {
+            console.log('Unknown Sharp product')
+          }
+          break
       }
-      this.communicating = false
     })
     usbDetect.on('remove', (device) => { this.readNetMd() })
     usbDetect.on('change', (device) => { this.readNetMd() })
@@ -207,6 +261,7 @@ export default {
       */
     readNetMd: function () {
       bus.$emit('netmd-status', { eventType: 'no-connection', deviceName: '' })
+      this.communicating = true
       if (this.mode === 'himd') {
         console.log('Attempting to read from HiMD')
       } else {
@@ -250,18 +305,42 @@ export default {
             this.tracks = results
             console.log(results)
             console.log(this.info.recordedTime !== '00:00:00.00' && this.tracks.length === 0)
-            // This is an awful check, that I hate.
-            // Ensure 'sane' data comes back before resolving
-            // TODO: Fix himdcli so the 'is md' check can be removed in the last case - this was causing incorrect error when reading a blank himd disc
-            if ((this.info.recordedTime !== '00:00:00.00' && this.tracks.length === 0) || (this.info.recordedTime === '00:00:00.00' && this.info.availableTime === '00:00:00.00' && this.mode === 'md')) {
-              let errorMessage = { message: 'Device not ready, recordedTime: ' + this.info.recordedTime + ' availableTime: ' + this.info.availableTime + ' Tracks: ' + this.tracks.length }
-              reject(errorMessage)
-            } else {
-              // Getting a response was successful, resolve and notify
-              bus.$emit('netmd-status', { eventType: 'ready' })
-              this.communicating = false
-              resolve()
+
+            // if in netmd mode, check that valid data comes back - sometimes this can return placeholder data if quieried shortly after device connection
+            if (this.mode === 'md') {
+              // This is an awful check, that I hate.
+              // Ensure 'sane' data comes back from netmdcli before resolving
+              if ((this.info.recordedTime !== '00:00:00.00' && this.tracks.length === 0) || (this.info.recordedTime === '00:00:00.00' && this.info.availableTime === '00:00:00.00')) {
+                let errorMessage = { message: 'Device not ready, recordedTime: ' + this.info.recordedTime + ' availableTime: ' + this.info.availableTime + ' Tracks: ' + this.tracks.length }
+                reject(errorMessage)
+              } else if (this.tracks.length > 0) {
+                if ((this.tracks[0]['protect'] === 'UNKNOWN') && (this.tracks[0]['bitrate'] === 'UNKNOWN') && (this.tracks[0]['name'] === '')) {
+                  let errorMessage = { message: 'Device not ready, recordedTime: ' + this.info.recordedTime + ' availableTime: ' + this.info.availableTime + ' Tracks: ' + this.tracks.length }
+                  reject(errorMessage)
+                }
+              }
             }
+            // Getting a response was successful, resolve and notify
+            bus.$emit('netmd-status', { eventType: 'ready' })
+            bus.$emit('netmd-status', { progress: 'Idle' })
+            this.communicating = false
+            resolve()
+          } else if (stringData.includes('no NetMD device')) {
+            // netmd cli cannot connect to a device
+            this.info.device = ''
+            this.info.availableTime = ''
+            this.info.title = ''
+            this.communicating = false
+            console.log('no devices found')
+            let errorMessage = { message: 'No NetMD devices found' }
+            reject(errorMessage)
+          } else if (stringData.includes('Error opening directory')) {
+            this.info.device = ''
+            this.info.availableTime = ''
+            this.info.title = ''
+            this.communicating = false
+            let errorMessage = { message: 'Cannot open himd directory' }
+            reject(errorMessage)
           } else {
             console.error('CLI did not return valid json data')
           }
@@ -554,6 +633,30 @@ export default {
       const i = Math.floor(Math.log(bytes) / Math.log(k))
 
       return parseFloat((bytes / Math.pow(k, i)).toFixed(dm)) + ' ' + sizes[i]
+    },
+    /*
+     * retry wrapper for connecting to MD devices
+     */
+    connectToDevice: async function (retries, timeout) {
+      for (var i = 0; i < retries; i++) {
+        this.progress = 'Connecting to ' + this.deviceName
+        this.communicating = true
+        try {
+          console.log('Connect to device, Try ' + (i + 1))
+          await this.readNetMd()
+          this.progress = 'Idle'
+          break
+        } catch (err) {
+          console.log(err)
+          await new Promise(async (resolve, reject) => setTimeout(resolve, timeout))
+        }
+      }
+      if (i === retries) {
+        // Feels like there should be a nicer way of resetting status if you roll off the end of the loop
+        this.deviceName = null
+        this.progress = 'Idle'
+      }
+      this.communicating = false
     },
     /**
       * Read-in config file
