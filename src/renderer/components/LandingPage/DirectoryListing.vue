@@ -269,7 +269,8 @@ export default {
         }
         // Convert to desired format
         let finalFile = await this.convert(fileName, this.selected[i])
-        let trackTitle = (this.selected[i].artist !== 'No Artist') ? this.selected[i].title + ' - ' + this.selected[i].artist : this.selected[i].title
+        let trackTitle = this.titleFormat.replace('%title%', this.selected[i].title).replace('%artist%', this.selected[i].artist).replace('%trackno%', this.selected[i].trackNo)
+        console.log('Title: ' + trackTitle)
         console.log('Conversion Complete: ' + finalFile)
         await this.sendToPlayer(finalFile, trackTitle)
         bus.$emit('netmd-status', { eventType: 'transfer-completed', isBusy: false })
@@ -491,6 +492,9 @@ export default {
       }
       if (store.has('conversionMode')) {
         this.conversionMode = store.get('conversionMode')
+      }
+      if (store.has('titleFormat')) {
+        this.titleFormat = store.get('titleFormat')
       }
       if (store.has('sonicStageNosStrip')) {
         this.sonicStageNosStrip = store.get('sonicStageNosStrip')
