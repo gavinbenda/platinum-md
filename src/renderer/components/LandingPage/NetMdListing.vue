@@ -377,14 +377,12 @@ export default {
       * This will allow to select a range of tracks in the future
       */
     deleteSelectedTracks: async function () {
-      let self = this
       if (this.selected[0] !== undefined) {
-        let trackNo = this.selected[0].no
-        console.log('Deleting: ' + trackNo)
-        await this.deleteTrack(trackNo, trackNo)
-          .then(await function () {
-            self.readNetMd()
-          })
+        for (const track of this.selected.reverse()) {
+          console.log('Deleting: ' + track.no)
+          await this.deleteTrack(track.no, track.no)
+        }
+        this.readNetMd()
       }
     },
     /**
