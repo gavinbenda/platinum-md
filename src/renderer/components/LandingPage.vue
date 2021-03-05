@@ -80,6 +80,29 @@
           </b-alert>
           <hr />
           <b-button variant="primary" @click="showDebugConsole">Show Debug Window</b-button>
+          <hr />
+          <b-button variant="primary" @click="findUSBDevices"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
+          <b><br>  Connected USB Devices</b>
+
+          <b-overlay :show="showOverlay" rounded="md" class="full-height">
+            <b-table
+              striped
+              :items="devices"
+              :fields="fields"
+              responsive="sm"
+            >
+              <div slot="table-busy" class="text-center text-danger my-2">
+                <b-spinner class="align-middle"></b-spinner>
+                <strong>Loading...</strong>
+              </div>
+
+            </b-table>
+            <template v-slot:overlay>
+              <b-spinner varient="success" label="Spinner" variant="success"></b-spinner>
+            </template>
+          </b-overlay>
+
+
         </b-tab>
       </b-tabs>
     </b-modal>
@@ -158,13 +181,15 @@
 
 <script>
   import bus from '@/bus'
-  import DirectoryListing from './LandingPage/DirectoryListing'
-  import NetMdListing from './LandingPage/NetMdListing'
-  import ControlBar from './LandingPage/ControlBar'
-  import path from 'path'
-  const { remote } = require('electron')
-  const homedir = require('os').homedir()
-  const Store = require('electron-store')
+import DirectoryListing from './LandingPage/DirectoryListing'
+import NetMdListing from './LandingPage/NetMdListing'
+import ControlBar from './LandingPage/ControlBar'
+import path from 'path'
+import { sonyVid, sonyHiMDPids, sonyMDPids } from '@/deviceIDs'
+const { remote } = require('electron')
+const homedir = require('os').homedir()
+const usbDetect = require('usb-detection')
+const Store = require('electron-store')
   const store = new Store()
   export default {
     name: 'landing-page',
@@ -195,6 +220,16 @@
         ],
         conversionModeHimdOptions: [
           { text: 'MP3', value: 'MP3' }
+        ],
+        showOverlay: false,
+        devices: [],
+        fields: [
+          { key: 'deviceAddress', sortable: true },
+          { key: 'manufacturer', sortable: true },
+          { key: 'deviceName', sortable: true },
+          { key: 'vendorId', sortable: true },
+          { key: 'productId', sortable: true },
+          { key: 'mdType', sortable: true }
         ],
         requiredPackages: [
           { name: 'brew', installed: '' },
@@ -233,6 +268,7 @@
         * Rename track modal
         */
       showSettingsModal: function () {
+        this.findUSBDevices()
         this.$refs['settings-modal'].show()
       },
       /**
@@ -311,6 +347,37 @@
             this.himdPath = store.get('downloadDir')
           }
         })
+      },
+      findUSBDevices: async function () {
+        this.devices = []
+        this.showOverlay = true
+        usbDetect.startMonitoring()
+        let device = await usbDetect.find(function (err, device) {
+          if (err) {
+            console.log(err)
+            throw err
+          }
+          return device
+        })
+        if (device.length) {
+          console.log(device)
+          this.devices = device
+        }
+        for (var i = 0, len = this.devices.length; i < len; i++) {
+          // This is not working because it just sees the vendor ID as undefined. Not sure how to force it to resolve
+          console.log(this.devices[i]['vendorID'])
+          if (this.devices[i]['vendorID'] === sonyVid) {
+            console.log('setting md type')
+            if (this.devices[i]['productID'] in sonyHiMDPids.keys()) {
+              this.devices[i]['mdType'] = 'HiMD'
+              this.devices[i]['deviceName'] = sonyHiMDPids[this.devices[i]['productID']]
+            } else if (this.devices[i]['productID'] in sonyMDPids.keys()) {
+              this.devices[i]['mdType'] = 'MD'
+              this.devices[i]['deviceName'] = sonyMDPids[this.devices[i]['productID']]
+            } else this.devices[i]['mdType'] = 'NonMD'
+          }
+        }
+        this.showOverlay = false
       },
       runTroubleshooter: function () {
         var depCheck
