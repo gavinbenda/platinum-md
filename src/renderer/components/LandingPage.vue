@@ -56,53 +56,58 @@
           <b-form-checkbox type="checkbox" name="sonicstage-titles" id="sonicstage-titles" v-model="sonicStageNosStrip">Strip SonicStage track numbers from titles (e.g 001-Title)</b-form-checkbox>
         </b-tab>
         <b-tab title="Help">
-          <b-row>
-            <b-col cols="6">
-              <b-button variant="primary" @click="runTroubleshooter" class="mb-2">Run Troubleshooter <font-awesome-icon icon="cog"></font-awesome-icon></b-button>
-              <b-table striped small :items="requiredPackages">
-                <template #cell(name)="data">
-                  <b>{{ data.value }}</b>
-                </template>
-                <template #cell(installed)="data">
-                  <b class="text-success" v-if="data.value==='Installed'">{{ data.value }}</b>
-                  <b class="text-danger" v-if="data.value!=='Installed'">{{ data.value }}</b>
-                </template>
-              </b-table>
-            </b-col>
-            <b-col cols="6">
-            </b-col>
-          </b-row>
-          <b-alert variant="info" show class="mt-3" v-if="packageError">
-            <b>IMPORTANT: You do not have all of the required libraries installed.</b><br />
-            <b-button variant="success" @click="installPackages" class="my-2" small>Click Here to Install Now <font-awesome-icon icon="cog"></font-awesome-icon></b-button><br />
-            <b>* Please wait for the terminal window to appear.
-            You may be asked to enter your password.</b>
-          </b-alert>
+          <div>
+            <b-card no-body>
+              <b-tabs pills card>
+                <b-tab title="Troubleshooter" active>
+                  <b-card-text>
+                    <b-row>
+                      <b-col cols="12">
+                        <b-table striped small :items="requiredPackages">
+                          <template #cell(name)="data">
+                            <b>{{ data.value }}</b>
+                          </template>
+                          <template #cell(installed)="data">
+                            <b class="text-success" v-if="data.value==='Installed'">{{ data.value }}</b>
+                            <b class="text-danger" v-if="data.value!=='Installed'">{{ data.value }}</b>
+                          </template>
+                        </b-table>
+                        <b-button variant="outline-success" @click="runTroubleshooter" class="mb-2">Re-Run Troubleshooter <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
+                      </b-col>
+                    </b-row>
+                    <b-alert variant="info" show class="mt-3" v-if="packageError">
+                      <b>IMPORTANT: You do not have all of the required libraries installed.</b><br />
+                      <b-button variant="success" @click="installPackages" class="my-2" small>Click Here to Install Now <font-awesome-icon icon="cog"></font-awesome-icon></b-button><br />
+                      <b>* Please wait for the terminal window to appear.
+                      You may be asked to enter your password.</b>
+                    </b-alert>
+                  </b-card-text>
+                </b-tab>
+                <b-tab title="Connected USB Devices">
+                  <b-card-text>
+                      <b-table
+                        striped
+                        small
+                        :items="devices"
+                        :fields="fields"
+                        responsive="sm"
+                      >
+                        <div slot="table-busy" class="text-center text-danger my-2">
+                          <b-spinner class="align-middle"></b-spinner>
+                          <strong>Loading...</strong>
+                        </div>
+                      </b-table>
+                      <template v-slot:overlay>
+                        <b-spinner varient="success" label="Spinner" variant="success"></b-spinner>
+                      </template>
+                    <b-button variant="outline-success" @click="findUSBDevices" class="mb-2">Refresh Device List <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
+                  </b-card-text>
+                </b-tab>
+              </b-tabs>
+            </b-card>
+          </div>
           <hr />
           <b-button variant="primary" @click="showDebugConsole">Show Debug Window</b-button>
-          <hr />
-          <b-button variant="primary" @click="findUSBDevices"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
-          <b><br>  Connected USB Devices</b>
-
-          <b-overlay :show="showOverlay" rounded="md" class="full-height">
-            <b-table
-              striped
-              :items="devices"
-              :fields="fields"
-              responsive="sm"
-            >
-              <div slot="table-busy" class="text-center text-danger my-2">
-                <b-spinner class="align-middle"></b-spinner>
-                <strong>Loading...</strong>
-              </div>
-
-            </b-table>
-            <template v-slot:overlay>
-              <b-spinner varient="success" label="Spinner" variant="success"></b-spinner>
-            </template>
-          </b-overlay>
-
-
         </b-tab>
       </b-tabs>
     </b-modal>
@@ -239,7 +244,7 @@ const Store = require('electron-store')
           { name: 'libusb', installed: '' },
           { name: 'libusb-compat', installed: '' },
           { name: 'libgcrypt', installed: '' },
-          { name: 'json-c2', installed: '' }
+          { name: 'json-c', installed: '' }
         ],
         packageError: false
       }
@@ -269,6 +274,7 @@ const Store = require('electron-store')
         */
       showSettingsModal: function () {
         this.findUSBDevices()
+        this.runTroubleshooter()
         this.$refs['settings-modal'].show()
       },
       /**
@@ -336,6 +342,9 @@ const Store = require('electron-store')
           }
         })
       },
+      /**
+      * Choose the path of the HiMD device
+      */
       chooseHiMDPath: function () {
         remote.dialog.showOpenDialog({
           properties: ['openDirectory'],
@@ -348,6 +357,9 @@ const Store = require('electron-store')
           }
         })
       },
+      /**
+      * Finds all USB devices and shows their mode for troubleshooting
+      */
       findUSBDevices: async function () {
         this.devices = []
         this.showOverlay = true
@@ -360,25 +372,30 @@ const Store = require('electron-store')
           return device
         })
         if (device.length) {
-          console.log(device)
           this.devices = device
         }
-        for (var i = 0, len = this.devices.length; i < len; i++) {
-          // This is not working because it just sees the vendor ID as undefined. Not sure how to force it to resolve
-          console.log(this.devices[i]['vendorID'])
-          if (this.devices[i]['vendorID'] === sonyVid) {
-            console.log('setting md type')
-            if (this.devices[i]['productID'] in sonyHiMDPids.keys()) {
-              this.devices[i]['mdType'] = 'HiMD'
-              this.devices[i]['deviceName'] = sonyHiMDPids[this.devices[i]['productID']]
-            } else if (this.devices[i]['productID'] in sonyMDPids.keys()) {
-              this.devices[i]['mdType'] = 'MD'
-              this.devices[i]['deviceName'] = sonyMDPids[this.devices[i]['productID']]
-            } else this.devices[i]['mdType'] = 'NonMD'
+        var sonyHiMDPidsKeys = Object.keys(sonyHiMDPids)
+        var sonyMDPidsKeys = Object.keys(sonyMDPids)
+        for (const device of this.devices) {
+          if (device.vendorId === sonyVid) {
+            if (sonyHiMDPidsKeys.includes(device.productId.toString())) {
+              device.mdType = 'HiMD'
+              device.deviceName = sonyHiMDPids[device.productId]
+              device._rowVariant = 'success'
+            } else if (sonyMDPidsKeys.includes(device.productId.toString())) {
+              device.mdType = 'MD'
+              device.deviceName = sonyMDPids[device.productId]
+              device._rowVariant = 'success'
+            }
           }
         }
         this.showOverlay = false
       },
+      /**
+      * Runs the troubleshooter, to figure out any dependancies that may be missing
+      * Note: OSX only
+      * TODO: Create functionality to detect the currently installed MD driver on Windows.
+      */
       runTroubleshooter: function () {
         var depCheck
         this.packageError = false
@@ -410,6 +427,9 @@ const Store = require('electron-store')
           }
         }
       },
+      /**
+      * Function to spawn the terminal and install homebrew, then all other dependancies on OSX
+      */
       installPackages: function () {
         const command = [
           `osascript -e 'tell application "Terminal" to activate'`,
