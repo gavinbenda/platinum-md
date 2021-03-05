@@ -6,6 +6,7 @@ import router from './router'
 import store from './store'
 
 import BootstrapVue from 'bootstrap-vue'
+import Clipboard from 'v-clipboard'
 
 import './scss/styles.scss'
 
@@ -19,6 +20,9 @@ Vue.component('font-awesome-icon', FontAwesomeIcon)
 
 /* eslint-disable no-unused-vars */
 Vue.use(BootstrapVue)
+
+/* eslint-disable no-unused-vars */
+Vue.use(Clipboard)
 
 if (!process.env.IS_WEB) Vue.use(require('vue-electron'))
 Vue.http = Vue.prototype.$http = axios
