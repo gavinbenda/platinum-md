@@ -262,20 +262,21 @@ export default {
         var fileName = this.selected[i].fileName
         // Check or Create temp directory
         try {
-          ensureDirSync(this.dir + this.tempDirectory)
-          console.log('Directory created' + this.dir + this.tempDirectory)
+          ensureDirSync(os.tmpdir() + this.tempDirectory)
+          console.log('Directory created' + os.tmpdir() + this.tempDirectory)
         } catch (err) {
           console.error(err)
         }
         // Convert to desired format
         let finalFile = await this.convert(fileName, this.selected[i])
-        let trackTitle = (this.selected[i].artist !== 'No Artist') ? this.selected[i].title + ' - ' + this.selected[i].artist : this.selected[i].title
+        let trackTitle = this.titleFormat.replace(/%title%/g, this.selected[i].title).replace(/%artist%/g, this.selected[i].artist).replace(/%trackno%/g, this.selected[i].trackNo)
+        console.log('Title: ' + trackTitle)
         console.log('Conversion Complete: ' + finalFile)
         await this.sendToPlayer(finalFile, trackTitle)
         bus.$emit('netmd-status', { eventType: 'transfer-completed', isBusy: false })
       }
       // Clean up
-      const deletedPaths = await del.sync([this.dir + this.tempDirectory], {force: true})
+      const deletedPaths = await del.sync([os.tmpdir() + this.tempDirectory], {force: true})
       console.log('Deleting:\n', deletedPaths.join('\n'))
     },
     /**
@@ -288,9 +289,9 @@ export default {
         console.log(filePath)
         var sourceFile = filePath
         let fileExtension = '.' + sourceFile.split('.').pop()
-        var destFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.raw.wav')
-        var atracFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.at3')
-        var finalFile = this.dir + this.tempDirectory + path.sep + selectedFile.title + ' - ' + selectedFile.artist + '.wav'
+        var destFile = os.tmpdir() + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.raw.wav')
+        var atracFile = os.tmpdir() + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.at3')
+        var finalFile = os.tmpdir() + this.tempDirectory + path.sep + selectedFile.title + ' - ' + selectedFile.artist + '.wav'
         let self = this
         // If sending in SP mode
         // Convert to Wav and send to NetMD Device
@@ -317,7 +318,7 @@ export default {
           await self.convertToWavWrapper(atracFile, finalFile)
         } else {
           // !SP and !LP, so must be hi-md - Convert to MP3
-          finalFile = this.dir + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.mp3')
+          finalFile = os.tmpdir() + this.tempDirectory + path.sep + fileName.replace(fileExtension, '.mp3')
           if (fileExtension.toLowerCase() === '.mp3') {
             // file is already a mp3, no need to convert
             // Strip id3v2 tag because it can cause tracks to be unplayable on device
@@ -491,6 +492,9 @@ export default {
       }
       if (store.has('conversionMode')) {
         this.conversionMode = store.get('conversionMode')
+      }
+      if (store.has('titleFormat')) {
+        this.titleFormat = store.get('titleFormat')
       }
       if (store.has('sonicStageNosStrip')) {
         this.sonicStageNosStrip = store.get('sonicStageNosStrip')

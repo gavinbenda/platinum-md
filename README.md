@@ -5,7 +5,7 @@
 > A Gui for NetMD.
 > This project aims to make uploading audio files to NetMD players seamless and automatic.
 
-![Screenshot](https://i.imgur.com/GdmUdYP.png)
+![Screenshot](https://i.imgur.com/ZGFvO9p.png)
 
 #### Dependancies
 

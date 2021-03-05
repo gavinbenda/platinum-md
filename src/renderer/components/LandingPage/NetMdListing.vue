@@ -22,7 +22,7 @@
           <b-col>
             <span v-if="info.device === ''">No Device Detected</span> <span v-else><b>{{ tracks.length }}</b> tracks on <i>{{ info.device }}</i></span><br />
             <b-button variant="link" class="p-0 m-0" @click="showRenameDiscModal"><b-badge class="text-uppercase" variant="primary" v-if="info.title !== ''">{{ info.title }} <font-awesome-icon icon="edit"></font-awesome-icon></b-badge></b-button>
-            <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Availible</b-badge>
+            <b-badge class="text-uppercase" v-if="info.title !== ''">{{ info.availableTime }} Available</b-badge>
           </b-col>
           <b-col class="text-right" cols="auto">
             <b-button variant="success" @click="downloadTracks" v-show=download :disabled="isBusy"><font-awesome-icon icon="angle-double-left"></font-awesome-icon> Transfer</b-button>
@@ -377,14 +377,12 @@ export default {
       * This will allow to select a range of tracks in the future
       */
     deleteSelectedTracks: async function () {
-      let self = this
       if (this.selected[0] !== undefined) {
-        let trackNo = this.selected[0].no
-        console.log('Deleting: ' + trackNo)
-        await this.deleteTrack(trackNo, trackNo)
-          .then(await function () {
-            self.readNetMd()
-          })
+        for (const track of this.selected.reverse()) {
+          console.log('Deleting: ' + track.no)
+          await this.deleteTrack(track.no, track.no)
+        }
+        this.readNetMd()
       }
     },
     /**

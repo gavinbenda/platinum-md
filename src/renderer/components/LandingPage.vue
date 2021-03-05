@@ -56,6 +56,29 @@
           <b-form-checkbox type="checkbox" name="sonicstage-titles" id="sonicstage-titles" v-model="sonicStageNosStrip">Strip SonicStage track numbers from titles (e.g 001-Title)</b-form-checkbox>
         </b-tab>
         <b-tab title="Help">
+          <b-row>
+            <b-col cols="6">
+              <b-button variant="primary" @click="runTroubleshooter" class="mb-2">Run Troubleshooter <font-awesome-icon icon="cog"></font-awesome-icon></b-button>
+              <b-table striped small :items="requiredPackages">
+                <template #cell(name)="data">
+                  <b>{{ data.value }}</b>
+                </template>
+                <template #cell(installed)="data">
+                  <b class="text-success" v-if="data.value==='Installed'">{{ data.value }}</b>
+                  <b class="text-danger" v-if="data.value!=='Installed'">{{ data.value }}</b>
+                </template>
+              </b-table>
+            </b-col>
+            <b-col cols="6">
+            </b-col>
+          </b-row>
+          <b-alert variant="info" show class="mt-3" v-if="packageError">
+            <b>IMPORTANT: You do not have all of the required libraries installed.</b><br />
+            <b-button variant="success" @click="installPackages" class="my-2" small>Click Here to Install Now <font-awesome-icon icon="cog"></font-awesome-icon></b-button><br />
+            <b>* Please wait for the terminal window to appear.
+            You may be asked to enter your password.</b>
+          </b-alert>
+          <hr />
           <b-button variant="primary" @click="showDebugConsole">Show Debug Window</b-button>
           <hr />
           <b-button variant="primary" @click="findUSBDevices"><font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
@@ -207,7 +230,18 @@ const Store = require('electron-store')
           { key: 'vendorId', sortable: true },
           { key: 'productId', sortable: true },
           { key: 'mdType', sortable: true }
-        ]
+        ],
+        requiredPackages: [
+          { name: 'brew', installed: '' },
+          { name: 'libid3tag', installed: '' },
+          { name: 'libtag', installed: '' },
+          { name: 'glib', installed: '' },
+          { name: 'libusb', installed: '' },
+          { name: 'libusb-compat', installed: '' },
+          { name: 'libgcrypt', installed: '' },
+          { name: 'json-c2', installed: '' }
+        ],
+        packageError: false
       }
     },
     created () {
@@ -343,8 +377,53 @@ const Store = require('electron-store')
             } else this.devices[i]['mdType'] = 'NonMD'
           }
         }
-
         this.showOverlay = false
+      },
+      runTroubleshooter: function () {
+        var depCheck
+        this.packageError = false
+        for (const dependancy of this.requiredPackages) {
+          console.log('Checking: ' + dependancy.name)
+          if (dependancy.name === 'brew') {
+            depCheck = require('child_process').exec('which brew')
+            depCheck.stdout.on('data', data => {
+              if (data.toString().includes('brew not found')) {
+                console.log('Did not find: ' + dependancy.name)
+                dependancy.installed = '!! Not Found'
+                this.packageError = true
+              } else {
+                dependancy.installed = 'Installed'
+              }
+            })
+          } else {
+            depCheck = require('child_process').exec('brew list ' + dependancy.name + ' | grep "No such keg"')
+            depCheck.stderr.on('data', data => {
+              console.log('stderr: ' + data.toString())
+              dependancy.installed = '!! Not Found'
+              this.packageError = true
+            })
+            depCheck.on('exit', function () {
+              if (dependancy.installed === '') {
+                dependancy.installed = 'Installed'
+              }
+            })
+          }
+        }
+      },
+      installPackages: function () {
+        const command = [
+          `osascript -e 'tell application "Terminal" to activate'`,
+          /* eslint-disable-next-line */
+          `-e 'tell application "Terminal" to do script "/bin/bash -c \\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\\""'`,
+          `-e 'tell application "Terminal" to do script "brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg json-c"'`
+        ].join(' ')
+        const child = require('child_process').exec(command, (error, stdout, stderr) => {
+          if (error) {
+            console.error(error)
+            alert('Unable to open Terminal window, see dev console for error.')
+          }
+        })
+        child.on('exit', (code) => console.log('Open terminal exit'))
       }
     },
     watch: {
