@@ -96,6 +96,12 @@
                           <b-spinner class="align-middle"></b-spinner>
                           <strong>Loading...</strong>
                         </div>
+                        
+                        <template v-slot:cell(mdType)="data">
+                          <b-badge class="badge-success">{{ data.item.mdType }}</b-badge>
+                          <b-button variant="primary" size="sm" v-if="data.item.mdType && osPlatform === 'win32'" @click="installWinUSBDriver(data.item.vendorId,data.item.productId,data.item.deviceName)">Associate Driver <font-awesome-icon icon="sync-alt"></font-awesome-icon></b-button>
+                        </template>
+                        
                       </b-table>
                       <template v-slot:overlay>
                         <b-spinner varient="success" label="Spinner" variant="success"></b-spinner>
@@ -185,7 +191,7 @@
 </template>
 
 <script>
-  import bus from '@/bus'
+import bus from '@/bus'
 import DirectoryListing from './LandingPage/DirectoryListing'
 import NetMdListing from './LandingPage/NetMdListing'
 import ControlBar from './LandingPage/ControlBar'
@@ -195,266 +201,274 @@ const { remote } = require('electron')
 const homedir = require('os').homedir()
 const usbDetect = require('usb-detection')
 const Store = require('electron-store')
-  const store = new Store()
-  export default {
-    name: 'landing-page',
-    components: { DirectoryListing, NetMdListing, ControlBar },
-    data () {
-      return {
-        isBusy: false,
-        conversionMode: 'SP',
-        conversionModeHimd: 'MP3',
-        titleFormat: '%title% - %artist%',
-        sonicStageNosStrip: true,
-        useSonicStageNos: true,
-        rh1: false,
-        mode: 'md',
-        downloadFormat: 'WAV',
-        downloadDir: homedir + '/pmd-music/',
-        himdPath: '/Volumes/NO NAME/',
-        progress: 'Idle',
-        progressPercent: 100,
-        modeOptions: [
-          { text: 'MD', value: 'md' },
-          { text: 'Hi-MD', value: 'himd' }
-        ],
-        conversionModeOptions: [
-          { text: 'SP', value: 'SP' },
-          { text: 'LP2', value: 'LP2' },
-          { text: 'LP4', value: 'LP4' }
-        ],
-        conversionModeHimdOptions: [
-          { text: 'MP3', value: 'MP3' }
-        ],
-        showOverlay: false,
-        devices: [],
-        fields: [
-          { key: 'deviceAddress', sortable: true },
-          { key: 'manufacturer', sortable: true },
-          { key: 'deviceName', sortable: true },
-          { key: 'vendorId', sortable: true },
-          { key: 'productId', sortable: true },
-          { key: 'mdType', sortable: true }
-        ],
-        requiredPackages: [
-          { name: 'brew', installed: '' },
-          { name: 'libid3tag', installed: '' },
-          { name: 'libtag', installed: '' },
-          { name: 'glib', installed: '' },
-          { name: 'libusb', installed: '' },
-          { name: 'libusb-compat', installed: '' },
-          { name: 'libgcrypt', installed: '' },
-          { name: 'json-c', installed: '' }
-        ],
-        packageError: false
+const store = new Store()
+export default {
+  name: 'landing-page',
+  components: { DirectoryListing, NetMdListing, ControlBar },
+  data () {
+    return {
+      isBusy: false,
+      conversionMode: 'SP',
+      conversionModeHimd: 'MP3',
+      titleFormat: '%title% - %artist%',
+      sonicStageNosStrip: true,
+      useSonicStageNos: true,
+      rh1: false,
+      mode: 'md',
+      downloadFormat: 'WAV',
+      downloadDir: homedir + '/pmd-music/',
+      himdPath: '/Volumes/NO NAME/',
+      progress: 'Idle',
+      progressPercent: 100,
+      modeOptions: [
+        { text: 'MD', value: 'md' },
+        { text: 'Hi-MD', value: 'himd' }
+      ],
+      conversionModeOptions: [
+        { text: 'SP', value: 'SP' },
+        { text: 'LP2', value: 'LP2' },
+        { text: 'LP4', value: 'LP4' }
+      ],
+      conversionModeHimdOptions: [
+        { text: 'MP3', value: 'MP3' }
+      ],
+      showOverlay: false,
+      devices: [],
+      fields: [
+        // { key: 'deviceAddress', sortable: true },
+        { key: 'manufacturer', sortable: true },
+        { key: 'deviceName', sortable: true },
+        { key: 'vendorId', sortable: true },
+        { key: 'productId', sortable: true },
+        { key: 'mdType', sortable: true }
+      ],
+      requiredPackages: [
+        { name: 'brew', installed: '' },
+        { name: 'libid3tag', installed: '' },
+        { name: 'libtag', installed: '' },
+        { name: 'glib', installed: '' },
+        { name: 'libusb', installed: '' },
+        { name: 'libusb-compat', installed: '' },
+        { name: 'libgcrypt', installed: '' },
+        { name: 'json-c', installed: '' }
+      ],
+      packageError: false
+    }
+  },
+  created () {
+    this.readConfig()
+  },
+  mounted () {
+    bus.$on('netmd-status', (data) => {
+      if ('deviceName' in data) {
+        this.rh1 = ((data.deviceName === 'Sony MZ-RH1 MD') || (this.mode === 'himd'))
+      }
+      if ('progress' in data) {
+        this.progress = data.progress
+      }
+      if ('progressPercent' in data) {
+        this.progressPercent = data.progressPercent
+      }
+      if ('isBusy' in data) {
+        this.isBusy = data.isBusy
+      }
+    })
+  },
+  methods: {
+    /**
+      * Rename track modal
+      */
+    showSettingsModal: function () {
+      this.findUSBDevices()
+      this.runTroubleshooter()
+      this.$refs['settings-modal'].show()
+    },
+    /**
+      * Save settings to store
+      */
+    saveSettings: function () {
+      store.set('mode', this.mode)
+      if (this.mode === 'himd') {
+        store.set('conversionMode', 'MP3')
+      } else {
+        store.set('conversionMode', this.conversionMode)
+      }
+      store.set('titleFormat', this.titleFormat)
+      store.set('sonicStageNosStrip', this.sonicStageNosStrip)
+      store.set('useSonicStageNos', this.useSonicStageNos)
+      store.set('downloadFormat', this.downloadFormat)
+      store.set('downloadDir', this.downloadDir)
+      store.set('himdPath', this.himdPath)
+      bus.$emit('config-update')
+    },
+    /**
+      * Read-in config file
+      */
+    readConfig: function () {
+      if (store.has('conversionMode')) {
+        this.conversionMode = store.get('conversionMode')
+      }
+      if (store.has('titleFormat')) {
+        this.titleFormat = store.get('titleFormat')
+      }
+      if (store.has('sonicStageNosStrip')) {
+        this.sonicStageNosStrip = store.get('sonicStageNosStrip')
+      }
+      if (store.has('useSonicStageNos')) {
+        this.useSonicStageNos = store.get('useSonicStageNos')
+      }
+      if (store.has('downloadFormat')) {
+        this.downloadFormat = store.get('downloadFormat')
+      }
+      if (store.has('downloadDir')) {
+        this.downloadFormat = store.get('downloadDir')
+      }
+      if (store.has('mode')) {
+        this.mode = store.get('mode')
+      }
+      if (store.has('himdPath')) {
+        this.himdPath = store.get('himdPath')
       }
     },
-    created () {
-      this.readConfig()
+    /**
+      * Show debug console
+      */
+    showDebugConsole: function () {
+      remote.getCurrentWindow().webContents.openDevTools()
     },
-    mounted () {
-      bus.$on('netmd-status', (data) => {
-        if ('deviceName' in data) {
-          this.rh1 = ((data.deviceName === 'Sony MZ-RH1 MD') || (this.mode === 'himd'))
-        }
-        if ('progress' in data) {
-          this.progress = data.progress
-        }
-        if ('progressPercent' in data) {
-          this.progressPercent = data.progressPercent
-        }
-        if ('isBusy' in data) {
-          this.isBusy = data.isBusy
+    chooseDownloadDir: function () {
+      remote.dialog.showOpenDialog({
+        properties: ['openDirectory'],
+        defaultPath: this.downloadDir
+      }, names => {
+        if (names != null) {
+          console.log('selected download directory:' + names[0])
+          store.set('downloadDir', names[0] + path.sep)
+          this.downloadDir = store.get('downloadDir')
         }
       })
     },
-    methods: {
-      /**
-        * Rename track modal
-        */
-      showSettingsModal: function () {
-        this.findUSBDevices()
-        this.runTroubleshooter()
-        this.$refs['settings-modal'].show()
-      },
-      /**
-        * Save settings to store
-        */
-      saveSettings: function () {
-        store.set('mode', this.mode)
-        if (this.mode === 'himd') {
-          store.set('conversionMode', 'MP3')
-        } else {
-          store.set('conversionMode', this.conversionMode)
+    /**
+    * Choose the path of the HiMD device
+    */
+    chooseHiMDPath: function () {
+      remote.dialog.showOpenDialog({
+        properties: ['openDirectory'],
+        defaultPath: this.himdPath
+      }, names => {
+        if (names != null) {
+          console.log('selected download directory:' + names[0])
+          store.set('downloadDir', names[0] + path.sep)
+          this.himdPath = store.get('downloadDir')
         }
-        store.set('titleFormat', this.titleFormat)
-        store.set('sonicStageNosStrip', this.sonicStageNosStrip)
-        store.set('useSonicStageNos', this.useSonicStageNos)
-        store.set('downloadFormat', this.downloadFormat)
-        store.set('downloadDir', this.downloadDir)
-        store.set('himdPath', this.himdPath)
-        bus.$emit('config-update')
-      },
-      /**
-        * Read-in config file
-        */
-      readConfig: function () {
-        if (store.has('conversionMode')) {
-          this.conversionMode = store.get('conversionMode')
+      })
+    },
+    /**
+    * Finds all USB devices and shows their mode for troubleshooting
+    */
+    findUSBDevices: async function () {
+      this.devices = []
+      this.showOverlay = true
+      usbDetect.startMonitoring()
+      let device = await usbDetect.find(function (err, device) {
+        if (err) {
+          console.log(err)
+          throw err
         }
-        if (store.has('titleFormat')) {
-          this.titleFormat = store.get('titleFormat')
-        }
-        if (store.has('sonicStageNosStrip')) {
-          this.sonicStageNosStrip = store.get('sonicStageNosStrip')
-        }
-        if (store.has('useSonicStageNos')) {
-          this.useSonicStageNos = store.get('useSonicStageNos')
-        }
-        if (store.has('downloadFormat')) {
-          this.downloadFormat = store.get('downloadFormat')
-        }
-        if (store.has('downloadDir')) {
-          this.downloadFormat = store.get('downloadDir')
-        }
-        if (store.has('mode')) {
-          this.mode = store.get('mode')
-        }
-        if (store.has('himdPath')) {
-          this.himdPath = store.get('himdPath')
-        }
-      },
-      /**
-        * Show debug console
-        */
-      showDebugConsole: function () {
-        remote.getCurrentWindow().webContents.openDevTools()
-      },
-      chooseDownloadDir: function () {
-        remote.dialog.showOpenDialog({
-          properties: ['openDirectory'],
-          defaultPath: this.downloadDir
-        }, names => {
-          if (names != null) {
-            console.log('selected download directory:' + names[0])
-            store.set('downloadDir', names[0] + path.sep)
-            this.downloadDir = store.get('downloadDir')
-          }
-        })
-      },
-      /**
-      * Choose the path of the HiMD device
-      */
-      chooseHiMDPath: function () {
-        remote.dialog.showOpenDialog({
-          properties: ['openDirectory'],
-          defaultPath: this.himdPath
-        }, names => {
-          if (names != null) {
-            console.log('selected download directory:' + names[0])
-            store.set('downloadDir', names[0] + path.sep)
-            this.himdPath = store.get('downloadDir')
-          }
-        })
-      },
-      /**
-      * Finds all USB devices and shows their mode for troubleshooting
-      */
-      findUSBDevices: async function () {
-        this.devices = []
-        this.showOverlay = true
-        usbDetect.startMonitoring()
-        let device = await usbDetect.find(function (err, device) {
-          if (err) {
-            console.log(err)
-            throw err
-          }
-          return device
-        })
-        if (device.length) {
-          this.devices = device
-        }
-        var sonyHiMDPidsKeys = Object.keys(sonyHiMDPids)
-        var sonyMDPidsKeys = Object.keys(sonyMDPids)
-        for (const device of this.devices) {
-          if (device.vendorId === sonyVid) {
-            if (sonyHiMDPidsKeys.includes(device.productId.toString())) {
-              device.mdType = 'HiMD'
-              device.deviceName = sonyHiMDPids[device.productId]
-              device._rowVariant = 'success'
-            } else if (sonyMDPidsKeys.includes(device.productId.toString())) {
-              device.mdType = 'MD'
-              device.deviceName = sonyMDPids[device.productId]
-              device._rowVariant = 'success'
-            }
+        return device
+      })
+      if (device.length) {
+        this.devices = device
+      }
+      var sonyHiMDPidsKeys = Object.keys(sonyHiMDPids)
+      var sonyMDPidsKeys = Object.keys(sonyMDPids)
+      for (const device of this.devices) {
+        if (device.vendorId === sonyVid) {
+          if (sonyHiMDPidsKeys.includes(device.productId.toString())) {
+            device.mdType = 'HiMD'
+            device.deviceName = sonyHiMDPids[device.productId]
+            device._rowVariant = 'success'
+          } else if (sonyMDPidsKeys.includes(device.productId.toString())) {
+            device.mdType = 'MD'
+            device.deviceName = sonyMDPids[device.productId]
+            device._rowVariant = 'success'
           }
         }
-        this.showOverlay = false
-      },
-      /**
-      * Runs the troubleshooter, to figure out any dependancies that may be missing
-      * Note: OSX only
-      * TODO: Create functionality to detect the currently installed MD driver on Windows.
-      */
-      runTroubleshooter: function () {
-        var depCheck
-        this.packageError = false
-        for (const dependancy of this.requiredPackages) {
-          console.log('Checking: ' + dependancy.name)
-          if (dependancy.name === 'brew') {
-            depCheck = require('child_process').exec('which brew')
-            depCheck.stdout.on('data', data => {
-              if (data.toString().includes('brew not found')) {
-                console.log('Did not find: ' + dependancy.name)
-                dependancy.installed = '!! Not Found'
-                this.packageError = true
-              } else {
-                dependancy.installed = 'Installed'
-              }
-            })
-          } else {
-            depCheck = require('child_process').exec('brew list ' + dependancy.name + ' | grep "No such keg"')
-            depCheck.stderr.on('data', data => {
-              console.log('stderr: ' + data.toString())
+      }
+      this.showOverlay = false
+    },
+    /**
+    * Runs the troubleshooter, to figure out any dependancies that may be missing
+    * Note: OSX only
+    * TODO: Create functionality to detect the currently installed MD driver on Windows.
+    */
+    runTroubleshooter: function () {
+      var depCheck
+      this.packageError = false
+      for (const dependancy of this.requiredPackages) {
+        console.log('Checking: ' + dependancy.name)
+        if (dependancy.name === 'brew') {
+          depCheck = require('child_process').exec('which brew')
+          depCheck.stdout.on('data', data => {
+            if (data.toString().includes('brew not found')) {
+              console.log('Did not find: ' + dependancy.name)
               dependancy.installed = '!! Not Found'
               this.packageError = true
-            })
-            depCheck.on('exit', function () {
-              if (dependancy.installed === '') {
-                dependancy.installed = 'Installed'
-              }
-            })
-          }
+            } else {
+              dependancy.installed = 'Installed'
+            }
+          })
+        } else {
+          depCheck = require('child_process').exec('brew list ' + dependancy.name + ' | grep "No such keg"')
+          depCheck.stderr.on('data', data => {
+            console.log('stderr: ' + data.toString())
+            dependancy.installed = '!! Not Found'
+            this.packageError = true
+          })
+          depCheck.on('exit', function () {
+            if (dependancy.installed === '') {
+              dependancy.installed = 'Installed'
+            }
+          })
         }
-      },
-      /**
-      * Function to spawn the terminal and install homebrew, then all other dependancies on OSX
-      */
-      installPackages: function () {
-        const command = [
-          `osascript -e 'tell application "Terminal" to activate'`,
-          /* eslint-disable-next-line */
-          `-e 'tell application "Terminal" to do script "/bin/bash -c \\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\\""'`,
-          `-e 'tell application "Terminal" to do script "brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg json-c"'`
-        ].join(' ')
-        const child = require('child_process').exec(command, (error, stdout, stderr) => {
-          if (error) {
-            console.error(error)
-            alert('Unable to open Terminal window, see dev console for error.')
-          }
-        })
-        child.on('exit', (code) => console.log('Open terminal exit'))
       }
     },
-    watch: {
-      mode: function () {
-        this.saveSettings()
-        bus.$emit('config-update')
-      },
-      conversionMode: function () {
-        this.saveSettings()
-        bus.$emit('config-update')
-      }
+    /**
+    * Function to spawn the terminal and install homebrew, then all other dependancies on OSX
+    */
+    installPackages: function () {
+      const command = [
+        `osascript -e 'tell application "Terminal" to activate'`,
+        /* eslint-disable-next-line */
+        `-e 'tell application "Terminal" to do script "/bin/bash -c \\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\\""'`,
+        `-e 'tell application "Terminal" to do script "brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg json-c"'`
+      ].join(' ')
+      const child = require('child_process').exec(command, (error, stdout, stderr) => {
+        if (error) {
+          console.error(error)
+          alert('Unable to open Terminal window, see dev console for error.')
+        }
+      })
+      child.on('exit', (code) => console.log('Open terminal exit'))
+    },
+    /**
+    * Associate a device with the WinUSB driver
+    * Note: this disables it working with SonicStage, and will need to use something like Zadig to associate back
+    */
+    installWinUSBDriver: function (vendorId, productId, description) {
+      console.log('Attempting to associate device (' + vendorId + ', ' + productId + ' - ' + description + ') with WinUSB Driver')
+      // winusbDriverGenerator.associate('0x' + vendorId, '0x' + productId, description)
+    }
+  },
+  watch: {
+    mode: function () {
+      this.saveSettings()
+      bus.$emit('config-update')
+    },
+    conversionMode: function () {
+      this.saveSettings()
+      bus.$emit('config-update')
     }
   }
+}
 </script>
