@@ -15,7 +15,7 @@
           <b-alert variant="info" show class="mt-3">
             The Hi-MD recorder appears as a usb drive when connected to computer, select that drive below, e.g. <pre class="badge badge-dark mb-0">'E:'</pre> or <pre class="badge badge-dark mb-0">'/Volumes/NO NAME/'</pre>
           </b-alert>
-          <b-alert variant="danger" show class="mt-3">
+          <b-alert variant="danger" show class="mt-3" v-if="mode==='himd'">
             <b>Hi-MD functionality is experimental - ONLY USE FOR DISCS YOU ARE PREPARED TO ERASE</b><br />
             In some cases Hi-MD functionality can corrupt the disc which prevents reading of any tracks.<br />
             Hi-SP/Hi-LP/MP3 transfers are supported from Hi-MD to computer, only MP3 transfers are supported to Hi-MD.<br >
@@ -59,7 +59,7 @@
           <div>
             <b-card no-body>
               <b-tabs pills card>
-                <b-tab title="Troubleshooter" active>
+                <b-tab title="Troubleshooter" active v-if="osPlatform === 'darwin'">
                   <b-card-text>
                     <b-row>
                       <b-col cols="12">
@@ -190,12 +190,13 @@ import DirectoryListing from './LandingPage/DirectoryListing'
 import NetMdListing from './LandingPage/NetMdListing'
 import ControlBar from './LandingPage/ControlBar'
 import path from 'path'
+import os from 'os'
 import { sonyVid, sonyHiMDPids, sonyMDPids } from '@/deviceIDs'
 const { remote } = require('electron')
 const homedir = require('os').homedir()
 const usbDetect = require('usb-detection')
 const Store = require('electron-store')
-  const store = new Store()
+const store = new Store()
   export default {
     name: 'landing-page',
     components: { DirectoryListing, NetMdListing, ControlBar },
@@ -246,11 +247,13 @@ const Store = require('electron-store')
           { name: 'libgcrypt', installed: '' },
           { name: 'json-c', installed: '' }
         ],
-        packageError: false
+        packageError: false,
+        osPlatform: ''
       }
     },
     created () {
       this.readConfig()
+      this.osPlatform = os.platform()
     },
     mounted () {
       bus.$on('netmd-status', (data) => {
@@ -397,34 +400,39 @@ const Store = require('electron-store')
       * TODO: Create functionality to detect the currently installed MD driver on Windows.
       */
       runTroubleshooter: function () {
-        var depCheck
-        this.packageError = false
-        for (const dependancy of this.requiredPackages) {
-          console.log('Checking: ' + dependancy.name)
-          if (dependancy.name === 'brew') {
-            depCheck = require('child_process').exec('which brew')
-            depCheck.stdout.on('data', data => {
-              if (data.toString().includes('brew not found')) {
-                console.log('Did not find: ' + dependancy.name)
+        if (os.platform() === 'darwin') {
+          var depCheck
+          this.packageError = false
+          for (const dependancy of this.requiredPackages) {
+            console.log('Checking: ' + dependancy.name)
+            if (dependancy.name === 'brew') {
+              depCheck = require('child_process').exec('which brew')
+              depCheck.stdout.on('data', data => {
+                if (data.toString().includes('brew not found')) {
+                  console.log('Did not find: ' + dependancy.name)
+                  dependancy.installed = '!! Not Found'
+                  this.packageError = true
+                } else {
+                  dependancy.installed = 'Installed'
+                }
+              })
+            } else {
+              depCheck = require('child_process').exec('brew list ' + dependancy.name + ' | grep "No such keg"')
+              depCheck.stderr.on('data', data => {
+                console.log('stderr: ' + data.toString())
                 dependancy.installed = '!! Not Found'
                 this.packageError = true
-              } else {
-                dependancy.installed = 'Installed'
-              }
-            })
-          } else {
-            depCheck = require('child_process').exec('brew list ' + dependancy.name + ' | grep "No such keg"')
-            depCheck.stderr.on('data', data => {
-              console.log('stderr: ' + data.toString())
-              dependancy.installed = '!! Not Found'
-              this.packageError = true
-            })
-            depCheck.on('exit', function () {
-              if (dependancy.installed === '') {
-                dependancy.installed = 'Installed'
-              }
-            })
+              })
+              depCheck.on('exit', function () {
+                if (dependancy.installed === '') {
+                  dependancy.installed = 'Installed'
+                }
+              })
+            }
           }
+        }
+        if (os.platform() === 'win32') {
+          // check which driver is installed
         }
       },
       /**
