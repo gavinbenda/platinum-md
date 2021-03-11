@@ -414,7 +414,7 @@ const store = new Store()
           for (const dependancy of this.requiredPackages) {
             console.log('Checking: ' + dependancy.name)
             if (dependancy.name === 'brew') {
-              depCheck = require('child_process').exec('which brew')
+              depCheck = require('child_process').exec('which /usr/local/bin/brew')
               depCheck.stdout.on('data', data => {
                 if (data.toString().includes('brew not found')) {
                   console.log('Did not find: ' + dependancy.name)
@@ -426,7 +426,7 @@ const store = new Store()
                 }
               })
             } else {
-              depCheck = require('child_process').exec('brew list ' + dependancy.name + ' | grep "No such keg"')
+              depCheck = require('child_process').exec('/usr/local/bin/brew list ' + dependancy.name + ' | grep "No such keg"')
               depCheck.stderr.on('data', data => {
                 console.log('stderr: ' + data.toString())
                 dependancy.installed = '!! Not Found'
@@ -449,12 +449,22 @@ const store = new Store()
       * Function to spawn the terminal and install homebrew, then all other dependancies on OSX
       */
       installPackages: function () {
-        const command = [
-          `osascript -e 'tell application "Terminal" to activate'`,
-          /* eslint-disable-next-line */
-          `-e 'tell application "Terminal" to do script "/bin/bash -c \\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\\""'`,
-          `-e 'tell application "Terminal" to do script "brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg json-c"'`
-        ].join(' ')
+        // if homebrew not found, install everything
+        var command
+        if (this.requiredPackages[0].installed === '!! Not Found') {
+          command = [
+            `osascript -e 'tell application "Terminal" to activate'`,
+            /* eslint-disable-next-line */
+            `-e 'tell application "Terminal" to do script "/bin/bash -c \\"$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\\" && brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg json-c"'`
+          ].join(' ')
+        // if we do have homebrew, it must just be packages we need
+        } else {
+          command = [
+            `osascript -e 'tell application "Terminal" to activate'`,
+            /* eslint-disable-next-line */
+           `-e 'tell application "Terminal" to do script "brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg json-c"'`
+          ].join(' ')
+        }
         const child = require('child_process').exec(command, (error, stdout, stderr) => {
           if (error) {
             console.error(error)
