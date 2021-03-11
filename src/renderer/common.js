@@ -1,3 +1,4 @@
+import bus from '@/bus'
 const fs = require('fs-extra')
 const ffmpegPath = require('@ffmpeg-installer/ffmpeg').path.replace('app.asar', 'app.asar.unpacked')
 const ffmpeg = require('fluent-ffmpeg')
@@ -33,10 +34,12 @@ export async function convertAudio (source, dest, format, title = null) {
       })
       .on('progress', function (progress) {
         console.log('Processing: ' + progress.timemark + ' done ' + progress.targetSize + ' kilobytes')
+        bus.$emit('netmd-status', { progress: 'Converting Track', progressPercent: Math.round(progress.percent) + '%' })
       })
       // If successful, resolve
       .on('end', function () {
         console.log('ffmpeg completed successfully')
+        bus.$emit('netmd-status', { progress: 'Idle', progressPercent: 0 })
         resolve()
       })
       // Reject if we get any errors

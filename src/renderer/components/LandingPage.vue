@@ -166,7 +166,7 @@
           </div>
         </b-col>
         <b-col class="text-right p-3">
-          <b-button variant="outline-light" @click="showSettingsModal">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button>
+          <b-button variant="outline-light" @click="showSettingsModal(0)">Settings <font-awesome-icon icon="cog"></font-awesome-icon></b-button>
         </b-col>
       </b-row>
     </b-container>
@@ -325,7 +325,7 @@ const store = new Store()
           this.downloadFormat = store.get('downloadFormat')
         }
         if (store.has('downloadDir')) {
-          this.downloadFormat = store.get('downloadDir')
+          this.downloadDir = store.get('downloadDir')
         }
         if (store.has('mode')) {
           this.mode = store.get('mode')

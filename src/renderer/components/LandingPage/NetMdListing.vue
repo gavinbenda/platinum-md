@@ -578,7 +578,7 @@ export default {
       }
 
       this.readNetMd()
-      bus.$emit('netmd-status', { progress: 'Idle' })
+      bus.$emit('netmd-status', { progress: 'Idle', isBusy: false })
     },
     /**
       * Fetch track from rh1
@@ -622,7 +622,7 @@ export default {
         mdcli.stdout.on('data', data => {
           var message = data.toString()
           if (message.match(/\d\d\.\d/)) {
-            bus.$emit('netmd-status', { progress: 'Downloading track ' + trackNo + ' - ' + message })
+            bus.$emit('netmd-status', { progress: 'Downloading track ' + trackNo, progressPercent: message })
           }
         })
       })
