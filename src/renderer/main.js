@@ -11,10 +11,10 @@ import Clipboard from 'v-clipboard'
 import './scss/styles.scss'
 
 import { library } from '@fortawesome/fontawesome-svg-core'
-import { faAngleDoubleLeft, faAngleDoubleRight, faSyncAlt, faLock, faLockOpen, faEdit, faTimes, faFolderOpen, faCog, faRandom, faHeadphones, faPlay, faPause, faStop, faForward, faBackward } from '@fortawesome/free-solid-svg-icons'
+import { faAngleDoubleLeft, faAngleDoubleRight, faSyncAlt, faLock, faLockOpen, faEdit, faTimes, faFolderOpen, faCog, faRandom, faHeadphones, faPlay, faPause, faStop, faForward, faBackward, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-library.add(faAngleDoubleLeft, faAngleDoubleRight, faSyncAlt, faLock, faLockOpen, faEdit, faTimes, faFolderOpen, faCog, faRandom, faHeadphones, faPlay, faPause, faStop, faForward, faBackward)
+library.add(faAngleDoubleLeft, faAngleDoubleRight, faSyncAlt, faLock, faLockOpen, faEdit, faTimes, faFolderOpen, faCog, faRandom, faHeadphones, faPlay, faPause, faStop, faForward, faBackward, faExclamationTriangle)
 
 Vue.component('font-awesome-icon', FontAwesomeIcon)
 

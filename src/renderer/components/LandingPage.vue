@@ -2,8 +2,8 @@
   <div id="wrapper" class="p-3">
 
     <b-modal @ok="saveSettings" ref="settings-modal" title="Settings" size="lg">
-      <b-tabs content-class="mt-3" card>
-        <b-tab title="Device Mode" active>
+      <b-tabs content-class="mt-3" v-model="settingsTabIndex" card>
+        <b-tab title="Device Mode">
           <b>Mode:</b>
           <b-form-group>
             <b-form-radio v-model="mode" name="mode-md" value='md'>MD</b-form-radio>
@@ -248,7 +248,8 @@ const store = new Store()
           { name: 'json-c', installed: '' }
         ],
         packageError: false,
-        osPlatform: ''
+        osPlatform: '',
+        settingsTabIndex: 0
       }
     },
     created () {
@@ -270,15 +271,21 @@ const store = new Store()
           this.isBusy = data.isBusy
         }
       })
+      // run a sanity check on first start
+      this.runTroubleshooter()
+      bus.$on('show-troubleshooter', (data) => {
+        this.showSettingsModal(4)
+      })
     },
     methods: {
       /**
         * Rename track modal
         */
-      showSettingsModal: function () {
+      showSettingsModal: function (tabIndex = 0) {
+        this.$refs['settings-modal'].show()
+        this.settingsTabIndex = tabIndex
         this.findUSBDevices()
         this.runTroubleshooter()
-        this.$refs['settings-modal'].show()
       },
       /**
         * Save settings to store
@@ -403,6 +410,7 @@ const store = new Store()
         if (os.platform() === 'darwin') {
           var depCheck
           this.packageError = false
+          bus.$emit('package-error', false)
           for (const dependancy of this.requiredPackages) {
             console.log('Checking: ' + dependancy.name)
             if (dependancy.name === 'brew') {
@@ -412,6 +420,7 @@ const store = new Store()
                   console.log('Did not find: ' + dependancy.name)
                   dependancy.installed = '!! Not Found'
                   this.packageError = true
+                  bus.$emit('package-error', true)
                 } else {
                   dependancy.installed = 'Installed'
                 }
@@ -422,6 +431,7 @@ const store = new Store()
                 console.log('stderr: ' + data.toString())
                 dependancy.installed = '!! Not Found'
                 this.packageError = true
+                bus.$emit('package-error', true)
               })
               depCheck.on('exit', function () {
                 if (dependancy.installed === '') {
