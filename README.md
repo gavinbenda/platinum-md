@@ -12,6 +12,8 @@
 
 #### Download & Installation
 
+---
+
 ##### OSX
 
 Download the [latest release](https://github.com/gavinbenda/platinum-md/releases/download/v1.1.0/platinum-md-1.1.0.dmg), and open the dmg.
@@ -35,6 +37,7 @@ Then run the following:
 
 `brew install --force pkg-config qt5 mad libid3tag libtag glib libusb libusb-compat libgcrypt ffmpeg json-c && brew link --force qt5`
 
+---
 
 ##### Windows
 
@@ -46,6 +49,7 @@ Please note, this will disable Sonic Stage from having access to the device, you
 
 Download Here: https://zadig.akeo.ie/
 
+---
 
 ##### Linux
 
@@ -58,6 +62,8 @@ From Terminal, run `apt-get install libgcrypt20-dev libglib2.0-dev libusb-1.0-0-
 You will also likely need to give your current user the correct permissions to access the USB/NetMD Device.
 This is a 'catch-all' but you may wish to add a specific deviceId/vendorId if you want to lock permissions down.
 Run the following: `sudo nano /etc/udev/rules.d/50-device.rules` and add the following: `SUBSYSTEM=="usb", GROUP="YOURUSERGROUPHERE"`
+
+---
 
 
 ## Features
