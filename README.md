@@ -41,7 +41,7 @@ Then run the following:
 
 ##### Windows
 
-Download the [latest release](https://github.com/gavinbenda/platinum-md/releases/download/v0.7.0-alpha/platinum-md.Setup.0.7.0.exe), and open the platinum-md .exe Setup file.
+Download the [latest release](https://github.com/gavinbenda/platinum-md/releases/download/v1.2.0/platinum-md.Setup.1.2.0.exe), and open the platinum-md .exe Setup file.
 
 IMPORTANT: You will need to download and use a tool called [Zadig](https://zadig.akeo.ie/) to install the WinUSB Driver.
 Connect your NetMD device, open the app and click the "Install Driver" button.
