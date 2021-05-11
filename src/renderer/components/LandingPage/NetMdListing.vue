@@ -545,6 +545,7 @@ export default {
         if (this.info.title !== '<Untitled>') {
           downloadPath = this.downloadDir + this.info.title
         }
+        ensureDirSync(this.downloadDir)
         ensureDirSync(downloadPath)
         console.log('Download directory created')
       } catch (err) {
