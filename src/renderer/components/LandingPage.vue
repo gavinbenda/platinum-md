@@ -197,7 +197,8 @@ const homedir = require('os').homedir()
 const usbDetect = require('usb-detection')
 const Store = require('electron-store')
 const store = new Store()
-  export default {
+const fixPath = require('fix-path')
+export default {
     name: 'landing-page',
     components: { DirectoryListing, NetMdListing, ControlBar },
     data () {
@@ -272,6 +273,7 @@ const store = new Store()
         }
       })
       // run a sanity check on first start
+      fixPath()
       this.runTroubleshooter()
       bus.$on('show-troubleshooter', (data) => {
         this.showSettingsModal(4)
@@ -414,7 +416,7 @@ const store = new Store()
           for (const dependancy of this.requiredPackages) {
             console.log('Checking: ' + dependancy.name)
             if (dependancy.name === 'brew') {
-              depCheck = require('child_process').exec('which /usr/local/bin/brew')
+              depCheck = require('child_process').exec('which brew')
               depCheck.stdout.on('data', data => {
                 if (data.toString().includes('brew not found')) {
                   console.log('Did not find: ' + dependancy.name)
@@ -426,7 +428,7 @@ const store = new Store()
                 }
               })
             } else {
-              depCheck = require('child_process').exec('/usr/local/bin/brew list ' + dependancy.name + ' | grep "No such keg"')
+              depCheck = require('child_process').exec('brew list ' + dependancy.name + ' | grep "No such keg"')
               depCheck.stderr.on('data', data => {
                 console.log('stderr: ' + data.toString())
                 dependancy.installed = '!! Not Found'
