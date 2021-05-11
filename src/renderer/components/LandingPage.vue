@@ -83,6 +83,11 @@
                     </b-alert>
                   </b-card-text>
                 </b-tab>
+                <b-tab title="Troubleshooter" active v-if="osPlatform === 'win32'">
+                  <b-alert variant="info" show class="mt-3">
+                    If your device is not detected, ensure you have downloaded and used the <a href="#" @click="openExternalLink('https://zadig.akeo.ie/')">Zadig Tool</a> to swap USB drivers.
+                  </b-alert>
+                </b-tab>
                 <b-tab title="Connected USB Devices">
                   <b-card-text>
                       <b-table
@@ -186,19 +191,20 @@
 
 <script>
   import bus from '@/bus'
-import DirectoryListing from './LandingPage/DirectoryListing'
-import NetMdListing from './LandingPage/NetMdListing'
-import ControlBar from './LandingPage/ControlBar'
-import path from 'path'
-import os from 'os'
-import { sonyVid, sonyHiMDPids, sonyMDPids } from '@/deviceIDs'
-const { remote } = require('electron')
-const homedir = require('os').homedir()
-const usbDetect = require('usb-detection')
-const Store = require('electron-store')
-const store = new Store()
-const fixPath = require('fix-path')
-export default {
+  import DirectoryListing from './LandingPage/DirectoryListing'
+  import NetMdListing from './LandingPage/NetMdListing'
+  import ControlBar from './LandingPage/ControlBar'
+  import path from 'path'
+  import os from 'os'
+  import { sonyVid, sonyHiMDPids, sonyMDPids } from '@/deviceIDs'
+  import { shell } from 'electron'
+  const { remote } = require('electron')
+  const homedir = require('os').homedir()
+  const usbDetect = require('usb-detection')
+  const Store = require('electron-store')
+  const store = new Store()
+  const fixPath = require('fix-path')
+  export default {
     name: 'landing-page',
     components: { DirectoryListing, NetMdListing, ControlBar },
     data () {
@@ -444,7 +450,7 @@ export default {
           }
         }
         if (os.platform() === 'win32') {
-          // check which driver is installed
+          // TODO: check which USB driver is installed
         }
       },
       /**
@@ -474,6 +480,12 @@ export default {
           }
         })
         child.on('exit', (code) => console.log('Open terminal exit'))
+      },
+      /**
+      * Function to open browser window
+      */
+      openExternalLink: function (link) {
+        shell.openExternal(link)
       }
     },
     watch: {
