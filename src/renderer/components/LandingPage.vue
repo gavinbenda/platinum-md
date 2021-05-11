@@ -83,6 +83,11 @@
                     </b-alert>
                   </b-card-text>
                 </b-tab>
+                <b-tab title="Troubleshooter" active v-if="osPlatform === 'win32'">
+                  <b-alert variant="info" show class="mt-3">
+                    If your device is not detected, ensure you have downloaded and used the <a href="#" @click="openExternalLink('https://zadig.akeo.ie/')">Zadig Tool</a> to swap USB drivers.
+                  </b-alert>
+                </b-tab>
                 <b-tab title="Connected USB Devices">
                   <b-card-text>
                       <b-table
@@ -186,17 +191,19 @@
 
 <script>
   import bus from '@/bus'
-import DirectoryListing from './LandingPage/DirectoryListing'
-import NetMdListing from './LandingPage/NetMdListing'
-import ControlBar from './LandingPage/ControlBar'
-import path from 'path'
-import os from 'os'
-import { sonyVid, sonyHiMDPids, sonyMDPids } from '@/deviceIDs'
-const { remote } = require('electron')
-const homedir = require('os').homedir()
-const usbDetect = require('usb-detection')
-const Store = require('electron-store')
-const store = new Store()
+  import DirectoryListing from './LandingPage/DirectoryListing'
+  import NetMdListing from './LandingPage/NetMdListing'
+  import ControlBar from './LandingPage/ControlBar'
+  import path from 'path'
+  import os from 'os'
+  import { sonyVid, sonyHiMDPids, sonyMDPids } from '@/deviceIDs'
+  import { shell } from 'electron'
+  const { remote } = require('electron')
+  const homedir = require('os').homedir()
+  const usbDetect = require('usb-detection')
+  const Store = require('electron-store')
+  const store = new Store()
+  const fixPath = require('fix-path')
   export default {
     name: 'landing-page',
     components: { DirectoryListing, NetMdListing, ControlBar },
@@ -272,6 +279,7 @@ const store = new Store()
         }
       })
       // run a sanity check on first start
+      fixPath()
       this.runTroubleshooter()
       bus.$on('show-troubleshooter', (data) => {
         this.showSettingsModal(4)
@@ -414,7 +422,7 @@ const store = new Store()
           for (const dependancy of this.requiredPackages) {
             console.log('Checking: ' + dependancy.name)
             if (dependancy.name === 'brew') {
-              depCheck = require('child_process').exec('which /usr/local/bin/brew')
+              depCheck = require('child_process').exec('which brew')
               depCheck.stdout.on('data', data => {
                 if (data.toString().includes('brew not found')) {
                   console.log('Did not find: ' + dependancy.name)
@@ -426,7 +434,7 @@ const store = new Store()
                 }
               })
             } else {
-              depCheck = require('child_process').exec('/usr/local/bin/brew list ' + dependancy.name + ' | grep "No such keg"')
+              depCheck = require('child_process').exec('brew list ' + dependancy.name + ' | grep "No such keg"')
               depCheck.stderr.on('data', data => {
                 console.log('stderr: ' + data.toString())
                 dependancy.installed = '!! Not Found'
@@ -442,7 +450,7 @@ const store = new Store()
           }
         }
         if (os.platform() === 'win32') {
-          // check which driver is installed
+          // TODO: check which USB driver is installed
         }
       },
       /**
@@ -472,6 +480,12 @@ const store = new Store()
           }
         })
         child.on('exit', (code) => console.log('Open terminal exit'))
+      },
+      /**
+      * Function to open browser window
+      */
+      openExternalLink: function (link) {
+        shell.openExternal(link)
       }
     },
     watch: {

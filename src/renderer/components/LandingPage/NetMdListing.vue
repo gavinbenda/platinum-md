@@ -133,6 +133,7 @@ import bus from '@/bus'
 import { netmdcliPath, himdcliPath } from '@/binaries'
 import { convertAudio, ensureDirSync } from '@/common'
 import { sonyVid, sharpVid, sonyMDPids, sonyHiMDPids, sharpPids } from '@/deviceIDs'
+import path from 'path'
 const checkDiskSpace = require('check-disk-space')
 const usbDetect = require('usb-detection')
 const homedir = require('os').homedir()
@@ -159,7 +160,7 @@ export default {
       newTrackPosition: 0,
       showOverlay: true,
       communicating: false,
-      downloadDir: homedir + '/pmd-music/',
+      downloadDir: homedir + path.sep + 'pmd-music' + path.sep,
       downloadFormat: 'FLAC',
       download: false,
       useSonicStageNos: true,
@@ -544,6 +545,7 @@ export default {
         if (this.info.title !== '<Untitled>') {
           downloadPath = this.downloadDir + this.info.title
         }
+        ensureDirSync(this.downloadDir)
         ensureDirSync(downloadPath)
         console.log('Download directory created')
       } catch (err) {
@@ -595,7 +597,7 @@ export default {
           'SP': '.aea'
         }
         let extension = extensions[trackFormat]
-        let downloadFile = downloadPath + '/'
+        let downloadFile = downloadPath + path.sep
         if (this.useSonicStageNos) {
           downloadFile += `00${trackNo}`.slice(-3) + '-' + trackName + extension
         } else {
