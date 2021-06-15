@@ -18,7 +18,7 @@
     "pack:renderer": "cross-env NODE_ENV=production webpack --progress --colors --config .electron-vue/webpack.renderer.config.js",
     "test": "npm run unit",
     "unit": "karma start test/unit/karma.conf.js",
-    "postinstall": "npm run lint:fix && ./node_modules/.bin/electron-rebuild"
+    "postinstall": "npm run lint:fix && ./node_modules/.bin/electron-rebuild && ./node_modules/.bin/electron-builder install-app-deps"
   },
   "build": {
     "productName": "platinum-md",

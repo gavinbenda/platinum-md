@@ -63,6 +63,9 @@ You will also likely need to give your current user the correct permissions to a
 This is a 'catch-all' but you may wish to add a specific deviceId/vendorId if you want to lock permissions down.
 Run the following: `sudo nano /etc/udev/rules.d/50-device.rules` and add the following: `SUBSYSTEM=="usb", GROUP="YOURUSERGROUPHERE"`
 
+Building: npm run-script build && npm run-script postinstall
+Running: ./build/platinum-md-X.Y.Z.AppImage
+
 ---
 
 
