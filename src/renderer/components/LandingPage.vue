@@ -424,7 +424,7 @@
             if (dependancy.name === 'brew') {
               depCheck = require('child_process').exec('which brew')
               depCheck.stdout.on('data', data => {
-                if (data.toString().includes('brew not found')) {
+                if (data.toString() === '' || data.toString().includes('brew not found')) {
                   console.log('Did not find: ' + dependancy.name)
                   dependancy.installed = '!! Not Found'
                   this.packageError = true
