@@ -150,7 +150,7 @@ export default {
     // check temp directory has trailing slash on linux
     if (os.platform() === 'linux') {
       let tmpdir = os.tmpdir()
-      if(!tmpdir.endsWith('/')) {
+      if (!tmpdir.endsWith('/')) {
         this.tempDirectory = '/' + tmpdir
       }
     }
