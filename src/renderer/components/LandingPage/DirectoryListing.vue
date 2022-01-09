@@ -147,6 +147,13 @@ export default {
   },
   mounted () {
     this.readDirectory()
+    // check temp directory has trailing slash on linux
+    if (os.platform() === 'linux') {
+      let tmpdir = os.tmpdir()
+      if(!tmpdir.endsWith('/')) {
+        this.tempDirectory = '/' + tmpdir
+      }
+    }
     bus.$on('config-update', () => {
       console.log('config-update recieved.')
       this.readConfig()
@@ -210,11 +217,11 @@ export default {
                   // filter forbidden filesystem characters
                   // Windows list from: https://docs.microsoft.com/en-us/windows/win32/fileio/naming-a-file
                   if (os.platform() === 'win32') {
-                    artist = (artist !== null) ? artist.substring(0, 50).replace(/[<>:"/\\|?*]/g, '_') : ''
-                    title = (title !== null) ? title.substring(0, 50).replace(/[<>:"/\\|?*]/g, '_') : ''
+                    artist = (artist !== null) ? artist.substring(0, 255).replace(/[<>:"/\\|?*]/g, '_') : ''
+                    title = (title !== null) ? title.substring(0, 255).replace(/[<>:"/\\|?*]/g, '_') : ''
                   } else {
-                    artist = (artist !== null) ? artist.substring(0, 50).replace('/', '_') : ''
-                    title = (title !== null) ? title.substring(0, 50).replace('/', '_') : ''
+                    artist = (artist !== null) ? artist.substring(0, 255).replace('/', '_') : ''
+                    title = (title !== null) ? title.substring(0, 255).replace('/', '_') : ''
                   }
                   // write the relevent data to the files array
                   this.files.push({
@@ -267,9 +274,10 @@ export default {
         } catch (err) {
           console.error(err)
         }
-        // Convert to desired format
+        // Convert to desired format, strip 'No Artist' rather than writing to disc
+        var artistName = (this.selected[i].artist !== 'No Artist') ? this.selected[i].artist : ''
         let finalFile = await this.convert(fileName, this.selected[i])
-        let trackTitle = this.titleFormat.replace(/%title%/g, this.selected[i].title).replace(/%artist%/g, this.selected[i].artist).replace(/%trackno%/g, this.selected[i].trackNo)
+        let trackTitle = this.titleFormat.replace(/%title%/g, this.selected[i].title).replace(/%artist%/g, artistName).replace(/%trackno%/g, this.selected[i].trackNo)
         console.log('Title: ' + trackTitle)
         console.log('Conversion Complete: ' + finalFile)
         await this.sendToPlayer(finalFile, trackTitle)
