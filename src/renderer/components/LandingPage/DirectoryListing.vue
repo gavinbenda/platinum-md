@@ -147,6 +147,13 @@ export default {
   },
   mounted () {
     this.readDirectory()
+    // check temp directory has trailing slash on linux
+    if (os.platform() === 'linux') {
+      let tmpdir = os.tmpdir()
+      if(!tmpdir.endsWith('/')) {
+        this.tempDirectory = '/' + tmpdir
+      }
+    }
     bus.$on('config-update', () => {
       console.log('config-update recieved.')
       this.readConfig()
