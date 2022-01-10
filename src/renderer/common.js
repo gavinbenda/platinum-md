@@ -93,3 +93,10 @@ export function ensureDirSync (dirpath) {
     if (err.code !== 'EEXIST') throw err
   }
 }
+
+/**
+  *Sanitize titles for half-width slot
+  */
+export function sanitizeName (name) {
+  return name.normalize('NFD').replace(/[^\x20-\x7F]/g, '')
+}
