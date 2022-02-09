@@ -10,6 +10,11 @@ if (process.env.NODE_ENV !== 'development') {
   global.__static = require('path').join(__dirname, '/static').replace(/\\/g, '\\\\')
 }
 
+app.allowRendererProcessReuse = false
+
+const ElectronStore = require('electron-store')
+ElectronStore.initRenderer()
+
 let mainWindow
 const winURL = process.env.NODE_ENV === 'development'
   ? `http://localhost:9080`
@@ -23,7 +28,12 @@ function createWindow () {
     height: 850,
     useContentSize: true,
     width: 1400,
-    icon: __static + '/icons/256x256.png'
+    icon: __static + '/icons/256x256.png',
+    webPreferences: {
+      nodeIntegration: true,
+      contextIsolation: false,
+      enableRemoteModule: true
+    }
   })
   mainWindow.loadURL(winURL)
   // Open dev tools initially when in development mode

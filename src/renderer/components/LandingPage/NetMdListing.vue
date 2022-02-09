@@ -134,6 +134,9 @@ import { netmdcliPath, himdcliPath } from '@/binaries'
 import { convertAudio, ensureDirSync } from '@/common'
 import { sonyVid, sharpVid, sonyMDPids, sonyHiMDPids, sharpPids } from '@/deviceIDs'
 import path from 'path'
+
+import { DeviceStatus } from 'netmd-js'
+
 const checkDiskSpace = require('check-disk-space')
 const usbDetect = require('usb-detection')
 const homedir = require('os').homedir()
@@ -277,6 +280,7 @@ export default {
         console.log('Attempting to read from HiMD')
       } else {
         console.log('Attempting to read from NetMD')
+        console.log(DeviceStatus)
       }
       this.tracks = []
       return new Promise((resolve, reject) => {

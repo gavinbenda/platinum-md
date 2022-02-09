@@ -20,6 +20,9 @@
     "unit": "karma start test/unit/karma.conf.js",
     "postinstall": "npm run lint:fix && ./node_modules/.bin/electron-rebuild"
   },
+  "resolutions": {
+    "node-abi": "^3.2.0"
+  },
   "build": {
     "productName": "platinum-md",
     "appId": "com.gavinbenda.platinum-md",
@@ -99,6 +102,7 @@
     }
   },
   "dependencies": {
+    "@electron/remote": "^2.0.4",
     "@ffmpeg-installer/ffmpeg": "^1.0.20",
     "@fortawesome/fontawesome-svg-core": "^1.2.21",
     "@fortawesome/free-solid-svg-icons": "^5.10.1",
@@ -107,25 +111,29 @@
     "axios": "^0.21.1",
     "bootstrap": "^4.3.1",
     "bootstrap-vue": "^2.0.2",
-    "electron-store": "^4.0.0",
+    "electron-store": "^7.0.3",
     "eslint-plugin-vue": "^6.2.2",
-    "ffi-napi": "^2.3.0",
+    "ffi-napi": "^4.0.3",
     "ffmpeg-static-electron": "^2.0.1",
     "file-type": "^12.1.0",
     "fix-path": "^3.0.0",
     "fluent-ffmpeg": "^2.1.2",
     "fs-extra": "^8.0.0",
+    "jconv": "^0.1.5",
     "jquery": "^3.5.0",
     "music-metadata": "^6.3.7",
+    "netmd-js": "^3.1.0",
     "python-shell": "^2.0.2",
     "read-chunk": "^3.2.0",
-    "usb-detection": "^4.10.0",
+    "usb": "^2.1.1",
+    "usb-detection": "^4.13.0",
     "v-clipboard": "^2.2.3",
     "vue": "^2.5.16",
     "vue-electron": "^1.0.6",
     "vue-router": "^3.0.1",
     "vuex": "^3.0.1",
-    "vuex-electron": "^1.0.0"
+    "vuex-electron": "^1.0.0",
+    "webusb": "2.2.0"
   },
   "devDependencies": {
     "@fortawesome/fontawesome-free": "^5.10.1",
@@ -148,11 +156,11 @@
     "css-loader": "^0.28.11",
     "del": "^5.1.0",
     "devtron": "^1.4.0",
-    "electron": "^2.0.18",
+    "electron": "13.6.9",
     "electron-builder": "^22.4.1",
     "electron-debug": "^1.5.0",
-    "electron-devtools-installer": "^2.2.4",
-    "electron-rebuild": "^1.10.1",
+    "electron-devtools-installer": "^3.2.0",
+    "electron-rebuild": "^3.2.5",
     "eslint": "^4.19.1",
     "eslint-config-standard": "^11.0.0",
     "eslint-friendly-formatter": "^4.0.1",
