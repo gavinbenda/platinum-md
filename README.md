@@ -16,7 +16,7 @@
 
 ##### OSX
 
-Download the [latest release](https://github.com/gavinbenda/platinum-md/releases/download/v1.1.0/platinum-md-1.1.0.dmg), and open the dmg.
+Download the [latest release](https://github.com/gavinbenda/platinum-md/releases/download/v1.2.1/platinum-md-1.2.1.dmg), and open the dmg.
 
 Drag the file to the applications folder.
 
