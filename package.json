@@ -111,7 +111,7 @@
     "eslint-plugin-vue": "^6.2.2",
     "ffi-napi": "^2.3.0",
     "ffmpeg-static-electron": "^2.0.1",
-    "file-type": "^12.1.0",
+    "file-type": "^16.5.4",
     "fix-path": "^3.0.0",
     "fluent-ffmpeg": "^2.1.2",
     "fs-extra": "^8.0.0",
