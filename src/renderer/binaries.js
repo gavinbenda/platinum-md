@@ -10,7 +10,7 @@ export const platform = getPlatform()
 
 const binariesPath =
   IS_PROD
-    ? path.join(path.dirname(__dirname), '..', './Resources', './bin')
+    ? path.join(process.resourcesPath, '../Resources', './bin')
     : path.join(root, './resources', platform, './bin')
 
 export const atracdencPath = path.resolve(path.join(binariesPath, './atracdenc'))
