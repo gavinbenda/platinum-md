@@ -168,13 +168,16 @@ export default {
       remote.dialog.showOpenDialog({
         properties: ['openDirectory'],
         defaultPath: this.dir
-      }, names => {
+      }).then(result => {
+        let names = result.filePaths
         if (names != null) {
           console.log('selected directory:' + names[0])
           store.set('baseDirectory', names[0] + path.sep)
           this.dir = store.get('baseDirectory')
           this.readDirectory()
         }
+      }).catch(err => {
+        console.log(err)
       })
     },
     /**
